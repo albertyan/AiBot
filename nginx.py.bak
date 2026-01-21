@@ -1,0 +1,55 @@
+import os
+import sys
+import subprocess
+import time
+from pathlib import Path
+
+class nginxContrl:
+
+
+    def get_resource_path(self, relative_path):
+        """获取资源绝对路径（兼容打包后环境）"""
+        if hasattr(sys, '_MEIPASS'):
+            base_path = Path(sys._MEIPASS)  # type: ignore
+            # base_path = Path(os.path.abspath("."))
+        else:
+            base_path = Path(os.path.abspath("."))
+        
+        return base_path / relative_path
+
+    def get_base_path(self):
+        """获取资源绝对路径（兼容打包后环境）"""
+        if hasattr(sys, '_MEIPASS'):
+            base_path = Path(sys._MEIPASS)
+            # base_path = Path(os.path.abspath("."))
+        else:
+            base_path = Path(os.path.abspath("."))
+        return base_path
+
+    def start(self):
+        # 启动 Nginx
+        curr = os.getcwd()
+        nginx_path = self.get_resource_path("nginx/nginx.exe")
+        conf_path = self.get_resource_path("nginx\\conf\\nginx.conf")
+        os.chdir(self.get_resource_path("nginx"))  # 切换到 Nginx 的工作目录
+        print(os.getcwd())
+        print(f"conf_path: {conf_path}")
+        try:
+            subprocess.Popen(["nginx.exe", "-c", conf_path])
+        except Exception as e:
+            print(f"Error starting Nginx: {e}")
+        else:
+            print("Nginx 启动成功！")
+
+        os.chdir(curr)
+
+    def stop(self):
+        curr = os.getcwd()
+        nginx_path = self.get_resource_path("nginx/nginx.exe")
+        conf_path = self.get_resource_path("nginx\\conf\\nginx.conf")
+
+        os.chdir(self.get_resource_path("nginx"))  # 切换到 Nginx 的工作目录
+        print(os.getcwd())
+        # 关闭 Nginx 的代码（程序退出时调用）
+        subprocess.run(["nginx.exe", "-s", "stop", "-c", conf_path])
+        os.chdir(curr)
