@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from loguru import logger
 from environment import env, EnvMode
 import importlib.util
+from config.env import *
 
 router = APIRouter()
 
@@ -20,16 +21,17 @@ router = APIRouter()
 
 BASE_DIR = os.path.abspath(os.getcwd())
 
-dist_dir = os.path.join(BASE_DIR, "dist\\gui")
+dist_dir = os.path.join(BASE_DIR, "dist", "gui")
 
-@router.get("/",response_class=HTMLResponse)
+@router.get("/", response_class = HTMLResponse)
 def hello():
     indexpath = os.path.join(dist_dir,"index.html")
-    print(indexpath)
+    logger.info(indexpath)
+    logger.info(settingFileConfig.COZE_SETTINGS_FILE)
     with open(indexpath) as f:
         return f.read()
     
-@router.get("/favicon.ico", include_in_schema=False)
+@router.get("/favicon.ico", include_in_schema = False)
 async def favicon():
     print(os.path.join(dist_dir, "favicon.ico"))
     return FileResponse(os.path.join(dist_dir, "favicon.ico"))

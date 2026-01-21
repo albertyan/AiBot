@@ -17,7 +17,7 @@ from api import home, config
 
 # 前端文件目录
 BASE_DIR = os.path.abspath(os.getcwd())
-dist_dir = os.path.join(BASE_DIR, "dist\\gui")
+dist_dir = os.path.join(BASE_DIR, "dist", "gui")
 # dist_dir = os.path.join(baseUtil.get_exe_path(), "gui")
 static_dir = os.path.join(dist_dir, "assets")
 

@@ -5,3 +5,4 @@
 GLOBAL_CONFIG = {
     "debug": True,
 }
+

@@ -1,7 +1,7 @@
 pyautogui>=0.9.54
 pycaw>=20240210
-pywin32>=308
-pywin32-ctypes>=0.2.2
+# pywin32>=308
+# pywin32-ctypes>=0.2.2
 pywinauto>=0.6.8
 psutil>=7.0.0
 
@@ -15,8 +15,8 @@ passlib[bcrypt]==1.7.4
 tinify==1.6.0
 pandas==2.0.3
 PyYaml==6.0.1
-python-dotenv==1.0.0
+python-dotenv>=1.1.0
 motor>=3.3.0
 
 pywebview>=4.0.0
-cozepy
+cozepy==0.20.0

@@ -2,6 +2,7 @@ import json
 from typing import Any
 from fastapi import APIRouter
 import time
+import config 
 
 router = APIRouter()
 
@@ -21,6 +22,7 @@ def set_coze_settings(settings: dict) -> Any:
     # 这里只是简单地返回更新后的设置
     last_update_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     result = {"coze_settings": settings.get("key"), "last_update_time": last_update_time}
+    
     # 写入配置文件  
     with open("coze_settings.json", "w") as f:
         json.dump(result, f)

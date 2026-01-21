@@ -3,6 +3,7 @@ import os
 import sys
 from dotenv import load_dotenv
 from functools import lru_cache
+from loguru import logger
 from pydantic_settings import BaseSettings
 from typing import Literal
 
@@ -125,6 +126,12 @@ class CachePathConfig:
     PATH = os.path.join(os.path.abspath(os.getcwd()), 'caches')
     PATHSTR = 'caches'
 
+class SettingFileConfig:
+    """
+    配置文件配置
+    """
+    COZE_SETTINGS_FILE = "coze_settings.json"
+
 
 class GetConfig:
     """
@@ -180,6 +187,13 @@ class GetConfig:
         获取OSS配置
         """
         return ALIOssSettings()
+    
+    @lru_cache()
+    def get_setting_file_config(self):
+        """
+        获取配置文件路径
+        """
+        return SettingFileConfig()
 
     @staticmethod
     def parse_cli_args():
@@ -206,6 +220,7 @@ class GetConfig:
         if run_env != '':
             env_file = f'.env.{run_env}'
         # 加载配置
+        logger.info(f"加载配置文件: {env_file}")
         load_dotenv(env_file)
 
 
@@ -223,3 +238,5 @@ RedisConfig = get_config.get_redis_config()
 UploadConfig = get_config.get_upload_config()
 # OSS配置
 OSSConfig = get_config.get_oss_config()
+# 配置文件配置
+settingFileConfig = get_config.get_setting_file_config()
