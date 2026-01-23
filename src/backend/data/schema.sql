@@ -1,102 +1,102 @@
 
--- ----------------------------
--- Table structure for contact_tags
--- ----------------------------
-DROP TABLE IF EXISTS "contact_tags";
-CREATE TABLE "contact_tags" (
-  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-  "account_id" TEXT NOT NULL,
-  "tag_name" TEXT NOT NULL,
-  "contact_count" INTEGER DEFAULT 0,
-  "last_updated" DATETIME,
-  FOREIGN KEY ("account_id") REFERENCES "wechat_accounts" ("account_id") ON DELETE NO ACTION ON UPDATE NO ACTION,
-  UNIQUE ("account_id" ASC, "tag_name" ASC)
-);
+-- -- ----------------------------
+-- -- Table structure for contact_tags
+-- -- ----------------------------
+-- DROP TABLE IF EXISTS "contact_tags";
+-- CREATE TABLE "contact_tags" (
+--   "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+--   "account_id" TEXT NOT NULL,
+--   "tag_name" TEXT NOT NULL,
+--   "contact_count" INTEGER DEFAULT 0,
+--   "last_updated" DATETIME,
+--   FOREIGN KEY ("account_id") REFERENCES "wechat_accounts" ("account_id") ON DELETE NO ACTION ON UPDATE NO ACTION,
+--   UNIQUE ("account_id" ASC, "tag_name" ASC)
+-- );
 
--- ----------------------------
--- Table structure for contacts
--- ----------------------------
-DROP TABLE IF EXISTS "contacts";
-CREATE TABLE "contacts" (
-  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-  "account_id" TEXT,
-  "name" TEXT NOT NULL,
-  "tag" TEXT,
-  "type" TEXT,
-  "last_updated" DATETIME,
-  FOREIGN KEY ("account_id") REFERENCES "wechat_accounts" ("account_id") ON DELETE NO ACTION ON UPDATE NO ACTION,
-  UNIQUE ("account_id" ASC, "name" ASC, "tag" ASC, "type" ASC),
-   (type IN ('friend', 'group'))
-);
+-- -- ----------------------------
+-- -- Table structure for contacts
+-- -- ----------------------------
+-- DROP TABLE IF EXISTS "contacts";
+-- CREATE TABLE "contacts" (
+--   "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+--   "account_id" TEXT,
+--   "name" TEXT NOT NULL,
+--   "tag" TEXT,
+--   "type" TEXT,
+--   "last_updated" DATETIME,
+--   FOREIGN KEY ("account_id") REFERENCES "wechat_accounts" ("account_id") ON DELETE NO ACTION ON UPDATE NO ACTION,
+--   UNIQUE ("account_id" ASC, "name" ASC, "tag" ASC, "type" ASC),
+--    (type IN ('friend', 'group'))
+-- );
 
--- ----------------------------
--- Table structure for friend_list
--- ----------------------------
-DROP TABLE IF EXISTS "friend_list";
-CREATE TABLE "friend_list" (
-  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-  "wxid" TEXT NOT NULL,
-  "remark" TEXT,
-  "tags" TEXT,
-  "nickname" TEXT,
-  "status" TEXT DEFAULT 'pending',
-  "error" TEXT,
-  "created_at" DATETIME DEFAULT CURRENT_TIMESTAMP,
-  "updated_at" DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE ("wxid" ASC),
-   (status IN ('pending', 'added', 'failed', 'unknown', 'already'))
-);
+-- -- ----------------------------
+-- -- Table structure for friend_list
+-- -- ----------------------------
+-- DROP TABLE IF EXISTS "friend_list";
+-- CREATE TABLE "friend_list" (
+--   "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+--   "wxid" TEXT NOT NULL,
+--   "remark" TEXT,
+--   "tags" TEXT,
+--   "nickname" TEXT,
+--   "status" TEXT DEFAULT 'pending',
+--   "error" TEXT,
+--   "created_at" DATETIME DEFAULT CURRENT_TIMESTAMP,
+--   "updated_at" DATETIME DEFAULT CURRENT_TIMESTAMP,
+--   UNIQUE ("wxid" ASC),
+--    (status IN ('pending', 'added', 'failed', 'unknown', 'already'))
+-- );
 
--- ----------------------------
--- Table structure for group_members
--- ----------------------------
-DROP TABLE IF EXISTS "group_members";
-CREATE TABLE "group_members" (
-  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-  "group_name" TEXT NOT NULL,
-  "nickname" TEXT NOT NULL,
-  "gender" TEXT,
-  "wx_id" TEXT,
-  "region" TEXT,
-  "is_friend" INTEGER DEFAULT 0,
-  "last_updated" DATETIME,
-  UNIQUE ("group_name" ASC, "nickname" ASC)
-);
+-- -- ----------------------------
+-- -- Table structure for group_members
+-- -- ----------------------------
+-- DROP TABLE IF EXISTS "group_members";
+-- CREATE TABLE "group_members" (
+--   "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+--   "group_name" TEXT NOT NULL,
+--   "nickname" TEXT NOT NULL,
+--   "gender" TEXT,
+--   "wx_id" TEXT,
+--   "region" TEXT,
+--   "is_friend" INTEGER DEFAULT 0,
+--   "last_updated" DATETIME,
+--   UNIQUE ("group_name" ASC, "nickname" ASC)
+-- );
 
--- ----------------------------
--- Table structure for sqlite_sequence
--- ----------------------------
-DROP TABLE IF EXISTS "sqlite_sequence";
-CREATE TABLE "sqlite_sequence" (
-  "name" ,
-  "seq" 
-);
+-- -- ----------------------------
+-- -- Table structure for sqlite_sequence
+-- -- ----------------------------
+-- DROP TABLE IF EXISTS "sqlite_sequence";
+-- CREATE TABLE "sqlite_sequence" (
+--   "name" ,
+--   "seq" 
+-- );
 
--- ----------------------------
--- Table structure for wechat_accounts
--- ----------------------------
-DROP TABLE IF EXISTS "wechat_accounts";
-CREATE TABLE "wechat_accounts" (
-  "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-  "nickname" TEXT NOT NULL,
-  "account_id" TEXT,
-  "last_updated" DATETIME,
-  UNIQUE ("account_id" ASC),
-  UNIQUE ("nickname" ASC, "account_id" ASC)
-);
+-- -- ----------------------------
+-- -- Table structure for wechat_accounts
+-- -- ----------------------------
+-- DROP TABLE IF EXISTS "wechat_accounts";
+-- CREATE TABLE "wechat_accounts" (
+--   "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+--   "nickname" TEXT NOT NULL,
+--   "account_id" TEXT,
+--   "last_updated" DATETIME,
+--   UNIQUE ("account_id" ASC),
+--   UNIQUE ("nickname" ASC, "account_id" ASC)
+-- );
 
--- ----------------------------
--- Auto increment value for contact_tags
--- ----------------------------
-UPDATE "sqlite_sequence" SET seq = 1 WHERE name = 'contact_tags';
+-- -- ----------------------------
+-- -- Auto increment value for contact_tags
+-- -- ----------------------------
+-- UPDATE "sqlite_sequence" SET seq = 1 WHERE name = 'contact_tags';
 
--- ----------------------------
--- Auto increment value for contacts
--- ----------------------------
-UPDATE "sqlite_sequence" SET seq = 1 WHERE name = 'contacts';
+-- -- ----------------------------
+-- -- Auto increment value for contacts
+-- -- ----------------------------
+-- UPDATE "sqlite_sequence" SET seq = 1 WHERE name = 'contacts';
 
--- ----------------------------
--- Auto increment value for wechat_accounts
--- ----------------------------
-UPDATE "sqlite_sequence" SET seq = 1 WHERE name = 'wechat_accounts';
+-- -- ----------------------------
+-- -- Auto increment value for wechat_accounts
+-- -- ----------------------------
+-- UPDATE "sqlite_sequence" SET seq = 1 WHERE name = 'wechat_accounts';
 

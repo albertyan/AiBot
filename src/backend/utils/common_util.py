@@ -8,7 +8,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 from sqlalchemy.engine.row import Row
 from typing import Any, Dict, List, Literal, Union
-from config.database import Base
+from src.backend.db.database import Base
 from config.env import CachePathConfig
 
 

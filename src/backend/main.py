@@ -1,6 +1,8 @@
+import asyncio
 import uvicorn
 import webview
 from utils.log_util import logger
+import backend_init 
 
 import random
 from io import StringIO
@@ -56,7 +58,10 @@ def fastServer(envmode):
 port =3000
 
 if __name__ == '__main__':
+    asyncio.run(backend_init.main())
     envMode.set_mode(EnvMode.DEV)
     # find_port()
     uviconserverThread()
     fastServer(envMode.envMode)
+
+    

@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from router import router_manager
-from api import home, config
+from api import home_router, setting_router
 # import baseUtil
 
 # 前端文件目录
@@ -25,9 +25,8 @@ app = FastAPI(docs_url=None)
 
 # 注册路由
 app.include_router(router_manager.router)
-app.include_router(config.router, prefix="/api", tags=["config"])
-app.include_router(home.router, prefix="/api", tags=["home"])
-# app.mount("/favicon.ico",StaticFiles(directory=dist_dir),name="favicon.ico")
+app.include_router(setting_router, prefix="/api", tags=["config"])
+app.include_router(home_router, prefix="/api", tags=["home"])
 app.mount("/assets", StaticFiles(directory=static_dir), name="assets")
 
 

@@ -1,22 +1,18 @@
 from fastapi import APIRouter
 
 
-from data.sqliteDB import SQLiteDB
-import threading
-import json
 
 
+home_router = APIRouter()
 
-router = APIRouter()
-
-@router.get("/init")
+@home_router.get("/init")
 def init():
 
-    try:
-        db = SQLiteDB("wechat_contacts.db")
-    except Exception as e:
-        print(f"数据库连接失败: {e}")
-        return {"error": "数据库连接失败"}
+    # try:
+    #     db = SQLiteDB("wechat_contacts.db")
+    # except Exception as e:
+    #     print(f"数据库连接失败: {e}")
+    #     return {"error": "数据库连接失败"}
     
     return {"message": f"Welcome to the AI Bot API!"}
 

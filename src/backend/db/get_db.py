@@ -1,5 +1,6 @@
-from config.database import async_engine, AsyncSessionLocal, Base
+from db.database import async_engine, AsyncSessionLocal, Base
 from utils.log_util import logger
+from db.models import *
 
 
 async def get_db():
@@ -20,6 +21,7 @@ async def init_create_table():
     :return:
     """
     logger.info('初始化数据库连接...')
+    logger.info(f"Registered tables: {Base.metadata.tables.keys()}")
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info('数据库连接成功')

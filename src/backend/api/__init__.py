@@ -1,4 +1,3 @@
 from .home import *
-from .config import *
+from .setting import *
 from .license import *
-

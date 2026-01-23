@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import sessionmaker
 from typing import Union
-from config.database import AsyncSessionLocal, quote_plus
+from db.database import AsyncSessionLocal, quote_plus
 from config.env import DataBaseConfig, RedisConfig
 from module_admin.dao.job_dao import JobDao
 from module_admin.entity.vo.job_vo import JobLogModel, JobModel

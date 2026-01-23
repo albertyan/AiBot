@@ -6,7 +6,7 @@ from functools import lru_cache
 from loguru import logger
 from pydantic_settings import BaseSettings
 from typing import Literal
-
+from pydantic import BaseModel
 
 class AppSettings(BaseSettings):
     """
@@ -73,7 +73,7 @@ class ALIOssSettings(BaseSettings):
     ALI_OSS_BUCKET: str = 'xxxx'
     UPLOAD_METHOD: str = 'xxxx'
 
-class UploadSettings:
+class UploadSettings(BaseModel):
     """
     上传配置
     """
@@ -111,26 +111,26 @@ class UploadSettings:
     ]
     DOWNLOAD_PATH: str = 'flux_admin/download_path'
 
-    def __init__(self):
+    def __init__(self, **data):
+        super().__init__(**data)
         if not os.path.exists(self.UPLOAD_PATH):
             os.makedirs(self.UPLOAD_PATH)
         if not os.path.exists(self.DOWNLOAD_PATH):
             os.makedirs(self.DOWNLOAD_PATH)
 
 
-class CachePathConfig:
+class CachePathConfig(BaseModel):  
     """
     缓存目录配置
     """
+    PATH : str = os.path.join(os.path.abspath(os.getcwd()), 'caches')
+    PATHSTR : str = 'caches'
 
-    PATH = os.path.join(os.path.abspath(os.getcwd()), 'caches')
-    PATHSTR = 'caches'
-
-class SettingFileConfig:
+class SettingFileConfig(BaseModel):
     """
     配置文件配置
     """
-    COZE_SETTINGS_FILE = "coze_settings.json"
+    COZE_SETTINGS_FILE : str = "coze_settings.json"
 
 
 class GetConfig:
