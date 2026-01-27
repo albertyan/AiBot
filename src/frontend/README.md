@@ -1,35 +1,45 @@
-# vue-base-html
+# AiBot Frontend (Vue Version)
 
-This template should help get you started developing with Vue 3 in Vite.
+This is a migration of the AiBot frontend project from React to Vue 3.
 
-## Recommended IDE Setup
+## Project Structure
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- `src/`
+  - `assets/`: Static assets and global styles (Tailwind CSS)
+  - `components/`: Reusable components (e.g., NavBar)
+  - `router/`: Vue Router configuration
+  - `views/`: Page components (migrated from React pages)
+  - `App.vue`: Main application component
+  - `main.js`: Application entry point
 
-## Customize configuration
+## Tech Stack
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+- **Framework**: Vue 3 (Composition API)
+- **Routing**: Vue Router 4
+- **Styling**: Tailwind CSS
+- **Build Tool**: Vite
+- **Icons**: Remix Icon & Font Awesome (via CDN)
 
-## Project Setup
+## Setup & Run
 
-```sh
-pnpm install
-```
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-### Compile and Hot-Reload for Development
+2. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-```sh
-pnpm dev
-```
+3. Build for production:
+   ```bash
+   npm run build
+   ```
 
-### Compile and Minify for Production
+## Migration Notes
 
-```sh
-pnpm build
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-pnpm lint
-```
+- All pages have been migrated to `src/views/`.
+- The `NavBar` component is used in each view to match the original layout.
+- Tailwind CSS configuration has been preserved to ensure consistent styling.
+- Routing paths match the original React application.

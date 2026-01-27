@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 
+  为什么设置全局字体为“Microsoft YaHei”：
+  - Windows 端默认可用，中文显示更圆润、笔画清晰，阅读体验更佳
+  - 在深色与浅色背景下都具备良好识别度，适合后台系统场景
+  - 提供系统与常见无衬线字体作为降级，保证跨平台兼容
+*/
+@layer base {
+  html, body, #app {
+    font-family: "Microsoft YaHei", "Segoe UI", system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB", "Arial", "Noto Sans CJK SC", sans-serif;
+  }
+}

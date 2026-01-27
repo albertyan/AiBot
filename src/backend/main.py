@@ -49,9 +49,9 @@ def fastServer(envmode):
     with redirect_stdout(stream):
         if envmode=="dev":
             # "http://localhost:3000" 前端node启动时的端口号，在vite.config.js 中配置
-            window = webview.create_window('AiBot', "http://localhost:3000", width=1024, height=768)
+            window = webview.create_window('AiBot', "http://localhost:3000", width=1024, height=800)
         else:
-            window = webview.create_window('AiBot', "http://localhost:"+str(port), width=1024, height=768)
+            window = webview.create_window('AiBot', "http://localhost:"+str(port), width=1024, height=800)
         webview.start(debug=(envmode == "dev"))
 
 #默认端口号，如果重复则随机选取一个

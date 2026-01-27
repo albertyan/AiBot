@@ -1,48 +1,49 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
-import PageView from '../views/pageView.vue'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: HomeView,
+      name: 'launch',
+      component: () => import('../views/Launch.vue')
     },
     {
-      path: '/index',
-      name: 'index',
-      component: PageView,
-      redirect: '/index/welcome',
-      children:[
-        {
-          path:'welcome',
-          name: 'welcome',
-          component: () => import('@/views/welcome.vue')
-        },
-        {
-          path:'ai',
-          name: 'ai',
-          component: () => import('@/views/ai.vue')
-        },
-        {
-          path:'contacts',
-          name: 'contacts',
-          component: () => import('@/views/contacts.vue')
-        },
-        {
-          path:'sop',
-          name: 'sop',
-          component: () => import('@/views/sop.vue')
-        },
-        {
-          path:'setting',
-          name: 'setting',
-          component: () => import('@/views/setting.vue')
-        }
-      ]
+      path: '/home',
+      name: 'home',
+      component: () => import('../views/Home.vue')
     },
-  ],
+    {
+      path: '/ai-sales',
+      name: 'ai-sales',
+      component: () => import('../views/AiSales.vue')
+    },
+    {
+      path: '/customer-management',
+      name: 'customer-management',
+      component: () => import('../views/CustomerManagement.vue')
+    },
+    {
+      path: '/moments',
+      name: 'moments',
+      component: () => import('../views/Moments.vue')
+    },
+    {
+      path: '/automation-sop',
+      name: 'automation-sop',
+      component: () => import('../views/AutomationSOP.vue')
+    },
+    {
+      path: '/config',
+      name: 'config',
+      component: () => import('../views/Config.vue')
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('../views/NotFound.vue')
+    }
+  ]
 })
 
 export default router

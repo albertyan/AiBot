@@ -1,33 +1,26 @@
 {
-  "name": "vue-base-html",
-  "version": "0.0.0",
+  "name": "aibot-frontend-vue",
   "private": true,
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "lint": "eslint . --fix",
-    "format": "prettier --write src/"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@ant-design/icons-vue": "^7.0.1",
-    "ant-design-vue": "4.x",
-    "dayjs": "^1.11.13",
-    "pinia": "^3.0.1",
-    "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
+    "vue": "^3.4.0",
+    "vue-router": "^4.2.5",
+    "pinia": "^2.1.7",
+    "lucide-vue-next": "^0.344.0",
+    "remixicon": "^4.1.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.22.0",
-    "@vitejs/plugin-vue": "^5.2.3",
-    "@vitejs/plugin-vue-jsx": "^4.1.2",
-    "@vue/eslint-config-prettier": "^10.2.0",
-    "eslint": "^9.22.0",
-    "eslint-plugin-vue": "~10.0.0",
-    "globals": "^16.0.0",
-    "prettier": "3.5.3",
-    "vite": "^6.2.4",
-    "vite-plugin-vue-devtools": "^7.7.2"
+    "@vitejs/plugin-vue": "^5.0.0",
+    "@vitejs/plugin-vue-jsx": "^3.1.0",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "vite": "^5.1.0"
   }
 }
