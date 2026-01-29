@@ -42,7 +42,7 @@ def start_backend_process():
         sys.executable, "-m", "uvicorn", 
         "src.backend.app:app", 
         "--host", "127.0.0.1", 
-        "--port", "8888", 
+        "--port", "3000", 
         "--reload"
     ]
     
@@ -69,7 +69,7 @@ def main():
         # 3. 启动前端窗口
         # 指向后端端口 8000
         print("Starting WebView window...")
-        webview.create_window('AiBot (Dev Mode - Auto Reload)', 'http://localhost:8888', width=1024, height=768)
+        webview.create_window('AiBot (Dev Mode - Auto Reload)', 'http://localhost:3000', width=1024, height=768)
         webview.start(debug=True)
         
     except KeyboardInterrupt:

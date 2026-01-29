@@ -6,8 +6,9 @@ pywinauto>=0.6.8
 psutil>=7.0.0
 
 SQLAlchemy[asyncio]==2.0.31
-pydantic-settings==2.6.1
+pydantic-settings>=2.12.0
 pydantic-validation-decorator==0.1.4
+sqlmodel>=0.0.30
 APScheduler==3.10.4
 DateTime==5.5
 openpyxl==3.1.5
@@ -21,3 +22,4 @@ motor>=3.3.0
 pywebview>=4.0.0
 cozepy==0.20.0
 aiosqlite>=0.17.0
+# websockets>=15.0.1

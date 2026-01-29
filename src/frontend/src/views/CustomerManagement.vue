@@ -1,11 +1,15 @@
 <script setup>
 import { ref, computed } from 'vue';
 import NavBar from '../components/NavBar.vue';
+import SyncSettingsModal from '../components/SyncSettingsModal.vue';
 
 const activeTab = ref('friends');
 const selectedCustomers = ref([]);
 const searchQuery = ref('');
 const filterDropdownOpen = ref(false);
+
+// Settings Modal State
+const isSettingsModalVisible = ref(false);
 
 const customers = [
   { id: '1', name: "'Qv", wechatId: '62dcbb88', avatar: 'Q', color: 'bg-purple-500' },
@@ -261,7 +265,10 @@ const selectedCustomerObjects = computed(() => {
 
           <!-- 设置按钮 -->
           <div class="mt-6 flex justify-end">
-            <button class="px-6 py-3 bg-white border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors flex items-center space-x-2">
+            <button 
+              @click="isSettingsModalVisible = true"
+              class="px-6 py-3 bg-white border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors flex items-center space-x-2"
+            >
               <i class="ri-settings-3-line text-base"></i>
               <span class="text-sm font-medium">设置</span>
             </button>
@@ -269,5 +276,8 @@ const selectedCustomerObjects = computed(() => {
         </div>
       </div>
     </div>
+
+    <!-- 同步通讯录设置弹窗 -->
+    <SyncSettingsModal v-model="isSettingsModalVisible" />
   </div>
 </template>

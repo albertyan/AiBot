@@ -1,10 +1,34 @@
 <script setup>
 import { useRouter } from 'vue-router';
+import { ref } from 'vue';
+import { message } from 'ant-design-vue';
+import { getDashboardData } from '../api/launch';
 
 const router = useRouter();
+const isLoading = ref(false);
+const errorMessage = ref('');
 
-const handleLaunch = () => {
-  router.push('/home');
+const handleLaunch = async () => {
+  isLoading.value = true;
+  errorMessage.value = '';
+  try {
+    const data = await getDashboardData();
+    console.log('Dashboard data:', data);
+    if (data.code === 200) {
+      router.push({ path: '/home', query: data.data || data });
+    } else {
+      const msg = data.message || '启动失败';
+      errorMessage.value = msg;
+      message.error(msg);
+    }
+  } catch (error) {
+    console.error('Error launching app:', error);
+    const msg = error.message || '启动失败';
+    errorMessage.value = msg;
+    message.error(msg);
+  } finally {
+    isLoading.value = false;
+  }
 };
 </script>
 
@@ -72,13 +96,24 @@ const handleLaunch = () => {
     <!-- 启动按钮 -->
     <button
       @click="handleLaunch"
-      class="group w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white py-4 rounded-xl font-bold text-lg transition-all shadow-lg shadow-teal-500/20 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+      :disabled="isLoading"
+      class="group w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white py-4 rounded-xl font-bold text-lg transition-all shadow-lg shadow-teal-500/20 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
     >
-        <span class="flex items-center justify-center">
+        <span class="flex items-center justify-center" v-if="!isLoading">
           <i class="ri-rocket-fill mr-2 group-hover:translate-x-1 transition-transform"></i>
           启动应用
         </span>
+        <span class="flex items-center justify-center" v-else>
+          <i class="ri-loader-4-line mr-2 animate-spin"></i>
+          启动中...
+        </span>
       </button>
+
+      <!-- 错误提示 -->
+      <div v-if="errorMessage" class="mt-4 p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2 text-red-600 text-sm animate-fade-in">
+        <i class="ri-error-warning-fill shrink-0"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
 
       <!-- 免责声明 -->
       <div class="mt-10 text-center border-t border-slate-100 pt-6">

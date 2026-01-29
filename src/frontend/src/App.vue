@@ -1,4 +1,16 @@
 <script setup>
+import { onMounted, onUnmounted } from 'vue';
+import { useSystemStore } from './stores/system';
+
+const systemStore = useSystemStore();
+
+onMounted(() => {
+  systemStore.startHeartbeat();
+});
+
+onUnmounted(() => {
+  systemStore.stopHeartbeat();
+});
 </script>
 
 <template>

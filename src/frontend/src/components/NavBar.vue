@@ -1,7 +1,13 @@
 <script setup>
-import { useRoute, RouterLink } from 'vue-router';
+import { useRoute, useRouter, RouterLink } from 'vue-router';
 
 const route = useRoute();
+const router = useRouter();
+
+const goLaunch = () => {
+  router.push('/');
+}
+
 /**
  * 为什么需要 isActive：
  * - 根据当前路由高亮对应的导航项，减少用户定位成本
@@ -29,7 +35,7 @@ const getLinkClass = (path) => {
   <nav class="bg-[#3B4A5C] border-b border-[#2d3a4b] sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-6">
       <div class="flex items-center justify-between h-16">
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-3 cursor-pointer hover:opacity-90 transition-opacity" @click="goLaunch">
           <div class="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-500 rounded flex items-center justify-center shadow-lg shadow-teal-500/20">
             <i class="ri-robot-2-line text-white text-lg"></i>
           </div>

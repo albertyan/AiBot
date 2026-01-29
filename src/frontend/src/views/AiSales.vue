@@ -4,7 +4,7 @@ import NavBar from '../components/NavBar.vue';
 
 const autoReply = ref(false);
 const manualReview = ref(false);
-const showStats = ref(true);
+const showStats = ref(false);
 const activeTab = ref('recent');
 </script>
 

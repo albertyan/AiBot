@@ -1,12 +1,42 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import { useSystemStore } from '../stores/system';
 import NavBar from '../components/NavBar.vue';
+import { getFriendCount, getGroupCount } from '../api/launch.js';
 
+// 这里使用路由查询参数而非全局状态，原因是首页展示的数据仅在启动阶段生成并短期使用，避免引入复杂状态管理
+const route = useRoute();
+const systemStore = useSystemStore();
 const activeTab = ref('account');
+// 将 Launch 通过 query 传递的参数转为响应式，原因是 Home 可能会在同一会话内被重新导航，需要实时反映路由变化
+const wxNumber = computed(() => route.query.wxNumber || '');
+const nickname = computed(() => route.query.nickname || '');
+const status = computed(() => systemStore.statusText);
+
+const friendCount = ref(0);
+const groupCount = ref(0);
+const loading = ref(true);
+
+onMounted(async () => {
+  try {
+    const [fc, gc] = await Promise.all([getFriendCount(), getGroupCount()]);
+    friendCount.value = fc?.data ?? 0;
+    groupCount.value = gc?.data ?? 0;
+  } catch (err) {
+    console.error(err);
+    friendCount.value = 0;
+    groupCount.value = 0;
+  } finally {
+    loading.value = false;
+  }
+});
+
+
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50">
+  <div v-if="!loading" class="min-h-screen bg-slate-50">
     <!-- 顶部导航 -->
     <NavBar />
 
@@ -25,7 +55,7 @@ const activeTab = ref('account');
           <div :class="`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold mb-0.5 transition-colors ${
              activeTab === 'account' ? 'bg-gradient-to-br from-teal-500 to-teal-600 text-white' : 'bg-slate-200 text-slate-500'
           }`">
-            ai
+            {{ wxNumber.slice(0, 2) }}
           </div>
           <span class="text-[10px] whitespace-nowrap font-medium">账号</span>
         </button>
@@ -52,7 +82,7 @@ const activeTab = ref('account');
                 Anlunai <span class="text-slate-400 text-lg font-normal ml-2">v1.5.5</span>
               </h1>
               <p class="text-base text-slate-500">
-                欢迎回来，<span class="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-emerald-600 font-bold">albertyan</span>
+                欢迎回来，<span class="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-emerald-600 font-bold">{{ nickname }}</span>
               </p>
             </div>
             <!-- 可选：添加快捷操作按钮或时间显示 -->
@@ -67,7 +97,7 @@ const activeTab = ref('account');
                   <i class="ri-user-line"></i>
                 </div>
               </div>
-              <div class="text-4xl font-bold text-slate-800 group-hover:text-teal-600 transition-colors">1344</div>
+              <div class="text-4xl font-bold text-slate-800 group-hover:text-teal-600 transition-colors">{{ friendCount }}</div>
             </div>
             
             <div class="bg-gradient-to-br from-white to-emerald-50/30 border border-slate-200/60 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow group">
@@ -77,10 +107,10 @@ const activeTab = ref('account');
                   <i class="ri-group-line"></i>
                 </div>
               </div>
-              <div class="text-4xl font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">335</div>
+              <div class="text-4xl font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">{{ groupCount }}</div>
             </div>
             
-            <div class="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-6 shadow-lg shadow-teal-500/20 text-white relative overflow-hidden group">
+            <div :class="`bg-gradient-to-br ${systemStore.isConnected ? 'from-teal-500 to-teal-600' : 'from-slate-500 to-slate-600'} rounded-xl p-6 shadow-lg shadow-teal-500/20 text-white relative overflow-hidden group`">
               <div class="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 pointer-events-none transition-transform group-hover:scale-150 duration-500"></div>
               <div class="flex items-center justify-between mb-4 relative z-10">
                 <div class="text-teal-100 text-sm font-medium">系统状态</div>
@@ -88,8 +118,8 @@ const activeTab = ref('account');
                   <i class="ri-wifi-line"></i>
                 </div>
               </div>
-              <div class="text-2xl font-bold mb-1 relative z-10">在线</div>
-              <div class="text-teal-100 text-sm relative z-10">正常连接</div>
+              <div class="text-2xl font-bold mb-1 relative z-10">{{ status }}</div>
+              <div class="text-teal-100 text-sm relative z-10">{{ systemStore.isConnected ? '正常连接' : '连接断开' }}</div>
             </div>
           </div>
 

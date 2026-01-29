@@ -1,7 +1,9 @@
+from typing import Any
 from sqlalchemy import Column, Integer, Text, String, BigInteger, DateTime, ForeignKey, UniqueConstraint, Boolean, Float, LargeBinary
 # from sqlalchemy.ext.declarative import declarative_base
 from db.database import Base, BaseMixin
 from sqlalchemy.orm import sessionmaker
+from sqlmodel import Field, SQLModel
 
 # --- Generated Models ---
 
@@ -39,7 +41,8 @@ class Friends(BaseMixin, Base):
         UniqueConstraint('account_id', 'wxid', 'tag'),
         {'sqlite_autoincrement': True}
     )
-
+    # info={'昵称':nickname,'微信号':wx_number,'地区':region,'备注':remark,'电话':phonenumber,
+    # '标签':tag,'描述':descrption,'朋友权限':permission,'共同群聊':f'{common_group_num}','个性签名':signature,'来源':source}
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False) # 显式定义以确保在第一列
     account_id = Column(Text, ForeignKey('wechat_accounts.account_id'), nullable=False)
     wxid = Column(Text, nullable=False)
@@ -47,6 +50,10 @@ class Friends(BaseMixin, Base):
     nickname = Column(Text)
     remark = Column(Text)
     tag = Column(Text)
+    source = Column(Text)
+    phonenumber = Column(Text)
+    permission = Column(Text)
+    region = Column(Text)
     is_new = Column(Integer, default=0)
 
 
@@ -109,3 +116,9 @@ class WechatAccounts(BaseMixin, Base):
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False) # 显式定义以确保在第一列
     nickname = Column(Text, nullable=False)
     account_id = Column(Text)
+
+
+class Message(SQLModel):
+    code : int 
+    message : str
+    data : Any = None

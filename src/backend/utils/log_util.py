@@ -3,7 +3,29 @@ import sys
 import time
 from pathlib import Path
 from loguru import logger
+import logging
 
+
+# # 配置日志
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+# )
+class IgnoreWebSocketLogFilter(logging.Filter):
+    """过滤掉 WebSocket 频繁连接/断开的日志"""
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.getMessage()
+        if '"WebSocket /" [accepted]' in msg:
+            return False
+        if msg == "connection open" or msg == "connection closed":
+            return False
+        return True
+
+# 将过滤器添加到 uvicorn 的 logger 中
+for logger_name in ["uvicorn", "uvicorn.access", "uvicorn.error"]:
+    logging.getLogger(logger_name).addFilter(IgnoreWebSocketLogFilter())
+
+    
 class LogConfig:
     """
     常用的 Loguru 配置类

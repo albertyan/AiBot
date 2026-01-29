@@ -1,14 +1,26 @@
 import os
 from pathlib import Path
-# from pywechat.WechatTools import Tools
-# from pywechat.Uielements import (Login_window,Main_window,SideBar,Independent_window,Buttons,Texts,Menus,TabItems,MenuItems,Edits,Windows)
-# from pywechat.WechatAuto import get_groups_info,WechatSettings
+import time
+from pywinauto import mouse
+from pywinauto import Desktop
 
+# from pyweixin.WeChatTools import Tools,Navigator
+
+
+# from pywechat.WechatTools import Tools
+from pyweixin.Uielements import (Login_window,Main_window,SideBar,Independent_window,Buttons,Texts,Menus,TabItems,MenuItems,Edits,Windows)
+# from pywechat.WechatAuto import get_groups_info,WechatSettings
+from pywinauto.timings import Timings
+from pyweixin.WeChatAuto import Contacts
+
+from auto.WeChatToolsExt import ToolsExt,NavigatorExt
+from auto.WeChatAutoExt import ContactsExt
 
 # Buttons=Buttons()#微信内部Button类型UI
-# Windows=Windows()#微信内部Window类型UI
-
-
+Main_window=Main_window()#微信内部Window类型UI
+Window=Windows()#微信内部Window类型UI
+SideBar=SideBar()#主界面左侧的侧边栏
+Timings.slow()
 # my = main_window.child_window(**Buttons.MySelfButton)
 # my.click_input()  # 点击我的按钮
 # print(f"2222: {my.window_text()}")  # 获取我的按钮的文本
@@ -49,9 +61,88 @@ from pathlib import Path
 #     # print(check_new_message())
 #     # my.click_input()
 #     WechatSettings.Auto_convert_voice_messages_to_text('open',is_maximize=False)
+# desktop=Desktop(backend='uia')#Window桌面
+# # main_window=desktop.window(**Main_window.MainWindow)
+# main_window= NavigatorExt.open_weixin()
+# ToolsExt.cancel_pin(main_window)
+# # 检查微信是否运行
+# is_running = ToolsExt.is_weixin_running()
+# print(f"微信是否运行中: {is_running}")
+# if not is_running:
+#     print("微信未运行，请先启动微信")
+#     exit()
+# print("1" + "-" * 20 + time.strftime("%H:%M:%S", time.localtime()))
+# # 等待窗口出现
+# if not main_window.exists(timeout=0.1):
+#     print("未找到微信主窗口，请确保已登录并打开主界面")
+#     exit()
+# # main_window.set_focus()
+# print("2" + "-" * 20 + time.strftime("%H:%M:%S", time.localtime()))
+# # 恢复窗口状态（如果最小化）
+# try:
+#     if main_window.get_show_state() == 2: # 2 代表最小化
+#         main_window.restore()
+#     main_window.set_focus()
+# except Exception as e:
+#     print(f"窗口操作异常: {e}")
+# print("3" + "-" * 20 + time.strftime("%H:%M:%S", time.localtime()))
+# # 获取窗口对象和坐标
+# main = main_window.wrapper_object()
+# print("4" + "-" * 20 + time.strftime("%H:%M:%S", time.localtime()))
+# rect = main.rectangle()
+# print(f"窗口坐标范围: {rect}")
+# #print(f"窗口左上角坐标: ({rect.left}, {rect.top})")
+# # 计算相对坐标
+# left = rect.left + 33
+# top = rect.top + 55
+# print(f"鼠标将移动到: ({left}, {top})")
+# # 移动鼠标
+# # mouse.move()
+# mouse.click(coords=(left, top)) # 暂时注释，防止误操作
+# print("5" + "-" * 20 + time.strftime("%H:%M:%S", time.localtime()))
+# text = {'control_type':'Text','class_name':'mmui::ContactProfileTextView'}
 
-BASE_DIR = os.path.abspath(os.getcwd())
-dist_dir = os.path.join(BASE_DIR, "dist", "gui")
 
-print(dist_dir)
-print(Path(os.getcwd()) )
+# # my = Tools.move_window_to_center(Window.PopUpProfileWindow)       
+# # time.sleep(1)
+# # handle=desktop.window(**Window.PopUpProfileWindow).handle
+# # print(handle)
+# # win32gui.ShowWindow(handle,1)
+# # my=desktop.window(handle=handle)
+
+# time.sleep(0.01)
+# # my=desktop.window(**Window.PopUpProfileWindow)
+# my=NavigatorExt.find_my_info_window()
+# try:
+#     my.wait('exists', timeout=2) # 等待窗口出现，避免 ElementNotFoundError
+#     print("好友信息窗口已打开")
+# except Exception:
+#     print("好友信息窗口未打开(超时)")
+
+# # if my.exists(timeout=0.1):
+# #     print("好友信息窗口已打开")
+# # else:
+# #     print("好友信息窗口未打开")
+
+# # my.print_control_identifiers()
+# print("6" + "-" * 20 + time.strftime("%H:%M:%S", time.localtime()))
+# # 使用 child_window 配合 found_index 快速获取，避免遍历整个树
+# try:
+#     # 尝试获取第一个匹配的控件
+#     no = my.child_window(found_index=0, **text).window_text()
+# except Exception:
+#     no = "未找到"
+# print(f"当前好友号码: {no}")
+# print("7" + "-" * 20 + time.strftime("%H:%M:%S", time.localtime()))
+
+# main_window.set_focus()
+
+# friends = ContactsExt.get_friends_detail()
+
+# for friend in friends:
+#     print(friend + ",")
+# info={'昵称':nickname,'微信号':wx_number,'地区':region,'备注':remark,'电话':phonenumber,
+# '标签':tag,'描述':descrption,'朋友权限':permission,'共同群聊':f'{common_group_num}','个性签名':signature,'来源':source}
+groups = ContactsExt.get_recent_groups()
+for group in groups:
+    print(group)
