@@ -5,7 +5,7 @@ PC微信中的各种Ui-Object,包括:
     - `Main_Window`: 主界面窗口内的一些Ui
     - `Login_Window`: 登录界面内的一些Ui
     - `Independent_Window`: 独立界面窗口
-    - `SideBar`: SideBar类型Ui
+    - `SideBar`: 左侧导航栏内的所有Ui
     - `Buttons`: Button类型Ui 
     - `Windows`: Window类型Ui
     - `Texts`: Text类型Ui
@@ -95,6 +95,7 @@ class Edits():
         self.NativeFileSaveEdit={'control_type':'Edit','framework_id':'Win32','top_level_only':False,'class_name':'Edit'}#windows本地选择文件夹窗口底部的编辑栏
         self.SnsEdit={'title':'','control_type':'Edit','class_name':"mmui::XValidatorTextEdit"}#朋友圈发布界面内的文本编辑框
         self.ChangeRemarkEdit={'control_type':'Edit','title':'修改备注'}#添加好友界面内的修改备注 
+        self.InputEdit={'control_type':'Edit','auto_id':'chat_input_field'}#好友独立聊天窗口内的文本编辑框
 
 class ListItems():
     def __init__(self):
@@ -151,7 +152,7 @@ class Lists():
         self.SideList={'control_type':'List','class_name':'mmui::ContactsManagerControlView'}#通讯录管理界面左侧侧边栏
         self.ContactsManageList={'control_type':'List','class_name':'mmui::ContactsManagerControlView'}#通讯录管理界面左侧列表
         self.FileList={'control_type':'List','auto_id':'file_list','class_name':'mmui::XRecyclerTableView'}#聊天文件右侧的文件列表
-        self.MomentsList={'control_type':'List','auto_id':'sns_list'}#朋友圈列表
+        self.MomentsList={'control_type':'List','auto_id':'sns_list','found_index':0}#朋友圈列表
         self.SnsDetailList={'control_type':'List','auto_id':'sns_detail_list'}#好友的朋友圈内点开一个项目后内部的列表
 
 class Panes():
@@ -190,7 +191,7 @@ class MenuItems():
         self.EnlargeMeunItem={'title':'放大阅读','control_type':'MenuItem'}#右键消息后的放大选项
         self.FindInChatMenuItem={'title':'定位到聊天位置','control_type':'MenuItem'}#聊天记录页面内右键消息后的Find in chat选项
         self.CopyLinkMenuItem={'title':'复制链接','auto_id':'XMenuItem','control_type':'MenuItem'}#在收藏界面右键菜单里的复制链接选项目
-        self.CopyItem={'title':'复制','auto_id':'XMenuItem','control_type':'MenuItem'}#主界面右键菜单里的复制选项
+        self.CopyMenuItem={'title':'复制','auto_id':'XMenuItem','control_type':'MenuItem'}#主界面右键菜单里的复制选项
 
 class CheckBoxes():
     def __init__(self):
@@ -227,7 +228,7 @@ class Login_window():
         
 
 class SideBar():
-    '''主界面侧边栏下的所有Ui'''
+    '''主界面侧导航栏下的所有Ui'''
     def __init__(self):
         self.Chats={'title':'微信','control_type':'Button','class_name':"mmui::XTabBarItem"}#主界面左侧的聊天按钮
         self.Contacts={'title':'通讯录','control_type':'Button'}#主界面左侧的通讯录按钮
@@ -237,7 +238,7 @@ class SideBar():
         self.Channels={'title':'视频号','control_type':'Button','class_name':"mmui::XTabBarItem"}#主界面左侧的视频号按钮
         self.MiniProgram={'title':'小程序面板','control_type':'Button','class_name':"mmui::XTabBarItem"}#主界面左侧的小程序面板按钮
         self.Discovery={'title':'发现','control_type':'Button'}#主界面左侧的发现按钮
-        self.More={'title':'更多','control_type':'Button','found_index':0} #主界面左侧的更多按钮 
+        self.More={'title':'更多','control_type':'Button','found_index':0}#主界面左侧的更多按钮 
 
     
 class Main_window():
@@ -301,3 +302,5 @@ class Groups():
         self.ChatOnlyGroup={'title':'仅聊天','control_type':'Group'}#好友权限内的仅聊天选项
         self.OpenPrivacyGroup={'title':'聊天、朋友圈、微信运动等','control_type':'Group'}#好友权限内的聊天、朋友圈、微信运动等选项
         self.ContactProfileViewGroup={'title':'','control_type':'Group','class_name':'mmui::ContactProfileView'}#添加好友界面内搜索微信号后弹出的好友信息(带有添加到通讯录按钮)组
+
+

@@ -28,12 +28,10 @@ Examples:
     >>> SystemSettings.copy_file_to_windowsclipboard('test.jopg')
 
 '''
-import io
 import os
 import time
 import shutil
 import ctypes
-from tkinter import Image
 import win32com.client
 import win32clipboard
 import ctypes

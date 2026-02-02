@@ -15,6 +15,7 @@ openpyxl==3.1.5
 passlib[bcrypt]==1.7.4
 tinify==1.6.0
 pandas==2.0.3
+numpy<2.0.0
 PyYaml==6.0.1
 python-dotenv>=1.1.0
 motor>=3.3.0

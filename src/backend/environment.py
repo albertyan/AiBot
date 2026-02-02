@@ -9,6 +9,15 @@ class EnvMode:
 
 env = EnvMode()
 
+class CurrentUser:
+    """
+    当前登录用户的全局状态容器
+    """
+    wxNickname : str
+    wxNumber : str
+    def __init__(self, nickname: str = "", number: str = ""):
+        self.wxNickname = nickname
+        self.wxNumber = number
 class GlobalState:
     """
     维护后端全局状态的简单容器
@@ -17,17 +26,18 @@ class GlobalState:
     """
     def __init__(self):
         # 使用字典而非 ORM 实例，原因是 ORM 对象关联会话生命周期，跨请求持有可能导致意外引用和线程安全问题
-        self.current_user: dict | None = None
+        self.current_user: CurrentUser | None = None
 
-    def set_current_user(self, user: dict | None):
+    def set_current_user(self, user: CurrentUser | None):
         # 明确设置全局当前用户，避免隐式依赖请求上下文
         self.current_user = user
 
-    def get_current_user(self) -> dict | None:
+    def get_current_user(self) -> CurrentUser | None:
         # 读取当前用户，供路由或服务层使用
         return self.current_user
 
 state = GlobalState()
+current_user = CurrentUser()
 
 if __name__ == "__main__":
     # env = EnvMode()

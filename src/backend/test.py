@@ -14,7 +14,7 @@ from pywinauto.timings import Timings
 from pyweixin.WeChatAuto import Contacts
 
 from auto.WeChatToolsExt import ToolsExt,NavigatorExt
-from auto.WeChatAutoExt import ContactsExt
+from auto.WeChatAutoExt import ContactsExt,MessagesExt, FriendSettingsExt
 
 # Buttons=Buttons()#微信内部Button类型UI
 Main_window=Main_window()#微信内部Window类型UI
@@ -143,6 +143,13 @@ Timings.slow()
 #     print(friend + ",")
 # info={'昵称':nickname,'微信号':wx_number,'地区':region,'备注':remark,'电话':phonenumber,
 # '标签':tag,'描述':descrption,'朋友权限':permission,'共同群聊':f'{common_group_num}','个性签名':signature,'来源':source}
-groups = ContactsExt.get_recent_groups()
-for group in groups:
-    print(group)
+# groups = ContactsExt.get_recent_groups()
+# for group in groups:
+#     print(group[0])
+#     print(group[1])
+
+
+print(MessagesExt.check_new_messages())
+print("*" * 30)
+# FriendSettingsExt.change_remark('张建坤','张建坤1')
+print(MessagesExt.dump_recent_sessions('Today'))

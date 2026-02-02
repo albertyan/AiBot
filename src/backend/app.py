@@ -8,8 +8,8 @@ import logging
 from typing import Dict, Any
 
 from pydantic import BaseModel
-from fastapi import FastAPI
-
+from fastapi import FastAPI, Response
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 import mimetypes
 
@@ -18,7 +18,7 @@ mimetypes.add_type("application/javascript", ".js")
 mimetypes.add_type("text/css", ".css")
 
 from router import router_manager
-from api import home_router, setting_router
+from api import home_router, setting_router, custom_router, autosop_router
 # import baseUtil
 
 # 前端文件目录
@@ -31,10 +31,29 @@ app = FastAPI(docs_url=None)
 
 # 注册路由
 app.include_router(router_manager.router)
-app.include_router(setting_router, prefix="/api", tags=["config"])
+app.include_router(setting_router, prefix="/api/setting", tags=["config"])
 app.include_router(home_router, prefix="/api/home", tags=["home"])
+app.include_router(custom_router, prefix="/api/custom", tags=["custom"])
+app.include_router(autosop_router, prefix="/api/autosop", tags=["autosop"])
 app.mount("/assets", StaticFiles(directory=static_dir), name="assets")
 
 
 class BaseMap(BaseModel):
     data: Dict[str, Any]
+
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    # API 404
+    if full_path.startswith("api/"):
+        return Response(status_code=404)
+    
+    # Try to serve static file
+    file_path = os.path.join(dist_dir, full_path)
+    if os.path.exists(file_path) and os.path.isfile(file_path):
+        return FileResponse(file_path)
+    
+    # SPA Fallback
+    index_path = os.path.join(dist_dir, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return Response("Index file not found", status_code=404)

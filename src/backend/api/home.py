@@ -5,18 +5,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from pywinauto.timings import Timings
 from pywinauto import mouse
-from pywinauto import Desktop
 
 
 from db.get_db import get_db
 from db.models import Friends, Groups, WechatAccounts,Message
 from auto.WeChatToolsExt import ToolsExt,NavigatorExt
 from auto.UielementsExt import PopUpProfileWindow
-from environment import state
+from environment import CurrentUser, state
 
 PopUpProfileWindow = PopUpProfileWindow()
-
-CurrentUser = None
 
 Timings.slow()
 
@@ -31,6 +28,7 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)) :
     # Get user info (Assuming single user or taking the first one for now)
     main_window= NavigatorExt.open_weixin()
     ToolsExt.cancel_pin(main_window)
+    time.sleep(0.5)
     # 检查微信是否运行
     is_running = ToolsExt.is_weixin_running()
     logger.info(f"微信是否运行中: {is_running}")
@@ -48,13 +46,14 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)) :
         main_window.set_focus()
     except Exception as e:
         logger.error(f"窗口操作异常: {e}")
+        return Message(code=400,message=f"窗口操作异常: {e}")
     # 获取窗口对象和坐标
     main = main_window.wrapper_object()
     rect = main.rectangle()
     logger.info(f"窗口坐标范围: {rect}")
     mouse.click(coords=(rect.left + 33, rect.top + 55)) 
 
-    time.sleep(0.01)
+    time.sleep(0.5)
     my=NavigatorExt.find_my_info_window()
     try:
         my.wait('exists', timeout=2) # 等待窗口出现，避免 ElementNotFoundError
@@ -63,6 +62,7 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)) :
         logger.error("个人信息窗口未打开(超时)")
         return Message(code=400,message="个人信息窗口未打开(超时)") 
     # 使用 child_window 配合 found_index 快速获取，避免遍历整个树
+    time.sleep(0.5)
     try:
         # mmui::XTextView
         nickname = my.child_window(found_index=0, **PopUpProfileWindow.ContactProfileNicknameTextView).window_text()
@@ -81,16 +81,12 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)) :
         db.add(WechatAccounts(nickname=nickname, account_id=wxNumber))
         await db.commit()
         # 将当前用户写入后端全局状态，原因是后续接口可能需要无数据库查询读取“当前账号”
-        state.set_current_user({"nickname": nickname, "account_id": wxNumber})
     else:
         # 更新最后登录时间,用update_time记录
         my.update_time = func.now()
         my.nickname = nickname
         await db.commit()
-        # 使用字典存储，原因是避免在全局持有 ORM 实例导致会话生命周期问题
-        user_dict = my.__dict__.copy()
-        user_dict.pop('_sa_instance_state', None)
-        state.set_current_user(user_dict)
+    state.set_current_user(CurrentUser(nickname=nickname, number=wxNumber))
     return Message(
         code=200,
         message=(f"当前微信号: {wxNumber}, 状态: {'在线' if is_running else '离线'}"),

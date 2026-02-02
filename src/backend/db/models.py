@@ -25,13 +25,13 @@ class Contacts(BaseMixin, Base):
 class ContactTags(BaseMixin, Base):
     __tablename__ = 'contact_tags'
     __table_args__ = (
-        UniqueConstraint('account_id', 'tag_name'),
+        UniqueConstraint('account_id', 'tag'),
         {'sqlite_autoincrement': True}
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False) # 显式定义以确保在第一列
     account_id = Column(Text, ForeignKey('wechat_accounts.account_id'), nullable=False)
-    tag_name = Column(Text, nullable=False)
+    tag = Column(Text, nullable=False)
     contact_count = Column(Integer, default=0)
 
 # Generated from friends.sql
@@ -54,6 +54,8 @@ class Friends(BaseMixin, Base):
     phonenumber = Column(Text)
     permission = Column(Text)
     region = Column(Text)
+    signature = Column(Text)
+    description = Column(Text)
     is_new = Column(Integer, default=0)
 
 

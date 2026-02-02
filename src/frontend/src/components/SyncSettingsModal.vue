@@ -1,7 +1,8 @@
 <script setup>
 import { ref } from 'vue';
-import { Modal, Checkbox, TimePicker, InputNumber, Select } from 'ant-design-vue';
+import { Modal, Checkbox, TimePicker, InputNumber, Select, message } from 'ant-design-vue';
 import dayjs from 'dayjs';
+import { syncFriend, syncGroup } from '../api/custom';
 
 const props = defineProps({
   modelValue: {
@@ -10,10 +11,10 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'sync-success']);
 
 const syncSettings = ref({
-  account: ['albertyanm','yanming'],
+  account: ['albertyan','yanming'],
   syncItems: ['groups'],
   syncFrequency: 7,
   startTime: dayjs('02:00', 'HH:mm'),
@@ -23,8 +24,8 @@ const syncSettings = ref({
 
 const accountOptions = ref([
   {
-    label: 'albertyanm',
-    value: 'albertyanm'
+    label: 'albertyan',
+    value: 'albertyan'
   },
   {
     label: 'yanming',
@@ -34,6 +35,46 @@ const accountOptions = ref([
 
 const handleCancel = () => {
   emit('update:modelValue', false);
+};
+
+const isSyncingFriends = ref(false);
+
+const handleSyncFriends = async () => {
+  if (isSyncingFriends.value) return;
+  isSyncingFriends.value = true;
+  try {
+    const res = await syncFriend();
+    if (res.code === 200) {
+      message.success(res.message || '好友同步成功');
+      emit('sync-success');
+    } else {
+      message.error(res.message || '好友同步失败');
+    }
+  } catch (error) {
+    message.error(error.message || '好友同步发生错误');
+  } finally {
+    isSyncingFriends.value = false;
+  }
+};
+
+const isSyncingGroups = ref(false);
+
+const handleSyncGroups = async () => {
+  if (isSyncingGroups.value) return;
+  isSyncingGroups.value = true;
+  try {
+    const res = await syncGroup();
+    if (res.code === 200) {
+      message.success(res.message || '群聊同步成功');
+      emit('sync-success');
+    } else {
+      message.error(res.message || '群聊同步失败');
+    }
+  } catch (error) {
+    message.error(error.message || '群聊同步发生错误');
+  } finally {
+    isSyncingGroups.value = false;
+  }
 };
 </script>
 
@@ -75,11 +116,21 @@ const handleCancel = () => {
             </div>
           </div>
           <div class="flex justify-center space-x-4 pt-2">
-            <button class="px-6 py-2 bg-[#4A90E2] hover:bg-[#357ABD] text-white rounded-lg transition-colors shadow-sm text-sm">
-              同步好友
+            <button 
+              @click="handleSyncFriends"
+              :disabled="isSyncingFriends"
+              class="px-6 py-2 bg-[#4A90E2] hover:bg-[#357ABD] text-white rounded-lg transition-colors shadow-sm text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              <i v-if="isSyncingFriends" class="ri-loader-4-line animate-spin mr-1"></i>
+              {{ isSyncingFriends ? '同步中...' : '同步好友' }}
             </button>
-            <button class="px-6 py-2 bg-[#4A90E2] hover:bg-[#357ABD] text-white rounded-lg transition-colors shadow-sm text-sm">
-              同步群聊
+            <button 
+              @click="handleSyncGroups"
+              :disabled="isSyncingGroups"
+              class="px-6 py-2 bg-[#4A90E2] hover:bg-[#357ABD] text-white rounded-lg transition-colors shadow-sm text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              <i v-if="isSyncingGroups" class="ri-loader-4-line animate-spin mr-1"></i>
+              {{ isSyncingGroups ? '同步中...' : '同步群聊' }}
             </button>
           </div>
         </div>
