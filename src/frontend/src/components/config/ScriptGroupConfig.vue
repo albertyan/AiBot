@@ -95,7 +95,7 @@ const handleSaveScript = () => {
   } else if (scriptType.value === 'agent') {
     const agent = agents.value.find(a => a.id === selectedAgent.value);
     if (agent) {
-      const prompt = agentPrompt.value.trim() || '请按要求生成话术';
+      const prompt = agentPrompt.value.trim();
       newScript = { type: 'agent', content: `${agent.name} - ${prompt}`, agentId: agent.id, prompt };
     }
   } else if (scriptType.value === 'file') {

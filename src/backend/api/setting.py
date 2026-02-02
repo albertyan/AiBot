@@ -98,7 +98,7 @@ def get_greeting_config() -> Message:
     except Exception as e:
         # 发生错误时返回空列表，避免前端崩溃
         print(f"Error loading greeting config: {e}")
-        return Message(code=200, message="success", data=[])
+        return Message(code=200, message="Failed to load greeting config", data=[])
 
 
 @setting_router.post("/greeting_config")
