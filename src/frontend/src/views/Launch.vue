@@ -17,7 +17,7 @@ const handleLaunch = async () => {
     if (data.code === 200) {
       router.push({ path: '/home', query: data.data || data });
     } else {
-      const msg = data.message || '启动失败';
+      const msg = data.msg || '启动失败';
       errorMessage.value = msg;
       message.error(msg);
     }
@@ -48,44 +48,44 @@ const handleLaunch = async () => {
       <!-- 标题区域 -->
     <div class="text-center mb-12">
       <h1 class="text-4xl font-bold text-slate-800 mb-3 tracking-tight">
-        Anlunai <span class="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-blue-600 text-xl font-medium ml-1">v1.5.5</span>
+        Anlunai <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-blue-600 text-xl font-medium ml-1">v1.5.5</span>
       </h1>
       <div class="flex items-center justify-center space-x-3 mt-4">
-        <div class="h-[2px] w-6 bg-gradient-to-r from-teal-400 to-teal-600 rounded-full"></div>
+        <div class="h-[2px] w-6 bg-gradient-to-r from-primary-400 to-primary-600 rounded-full"></div>
         <p class="text-slate-500 text-xs tracking-[0.2em] uppercase font-bold">AI Intelligent Assistant</p>
-        <div class="h-[2px] w-6 bg-gradient-to-r from-teal-600 to-teal-400 rounded-full"></div>
+        <div class="h-[2px] w-6 bg-gradient-to-r from-primary-600 to-primary-400 rounded-full"></div>
       </div>
     </div>
 
     <!-- 启动向导 -->
     <div class="mb-10">
       <h2 class="text-lg font-bold text-slate-800 mb-6 flex items-center">
-        <span class="w-1.5 h-5 bg-gradient-to-b from-teal-500 to-blue-600 rounded-full mr-3"></span>
+        <span class="w-1.5 h-5 bg-gradient-to-b from-primary-500 to-blue-600 rounded-full mr-3"></span>
         启动向导
       </h2>
       
       <div class="space-y-5 mb-6 pl-1">
         <div class="flex items-start space-x-4 group">
-          <div class="w-7 h-7 bg-white border border-slate-200 shadow-sm rounded-lg flex items-center justify-center shrink-0 group-hover:bg-teal-500 group-hover:border-teal-500 transition-all duration-300">
+          <div class="w-7 h-7 bg-white border border-slate-200 shadow-sm rounded-lg flex items-center justify-center shrink-0 group-hover:bg-primary-500 group-hover:border-primary-500 transition-all duration-300">
             <span class="font-bold text-xs text-slate-500 group-hover:text-white transition-colors duration-200">01</span>
           </div>
-          <p class="text-slate-600 text-sm leading-7">请确保已登录至少 <span class="text-teal-600 font-bold">1个</span> 微信号</p>
+          <p class="text-slate-600 text-sm leading-7">请确保已登录至少 <span class="text-primary-600 font-bold">1个</span> 微信号</p>
         </div>
 
-        <div class="bg-teal-50/50 border border-teal-100 rounded-lg p-4 flex items-start space-x-3">
-          <i class="ri-information-fill text-teal-500 text-lg mt-0.5"></i>
-          <p class="text-teal-700 text-sm leading-relaxed font-medium">确保微信窗口可见，不要最小化或关闭</p>
+        <div class="bg-primary-50/50 border border-primary-100 rounded-lg p-4 flex items-start space-x-3">
+          <i class="ri-information-fill text-primary-500 text-lg mt-0.5"></i>
+          <p class="text-primary-700 text-sm leading-relaxed font-medium">确保微信窗口可见，不要最小化或关闭</p>
         </div>
 
         <div class="flex items-start space-x-4 group">
-          <div class="w-7 h-7 bg-white border border-slate-200 shadow-sm rounded-lg flex items-center justify-center shrink-0 group-hover:bg-teal-500 group-hover:border-teal-500 transition-all duration-300">
+          <div class="w-7 h-7 bg-white border border-slate-200 shadow-sm rounded-lg flex items-center justify-center shrink-0 group-hover:bg-primary-500 group-hover:border-primary-500 transition-all duration-300">
             <span class="font-bold text-xs text-slate-500 group-hover:text-white transition-colors duration-200">02</span>
           </div>
           <p class="text-slate-600 text-sm leading-7">点击启动应用后，请勿操作鼠标</p>
         </div>
 
         <div class="flex items-start space-x-4 group">
-          <div class="w-7 h-7 bg-white border border-slate-200 shadow-sm rounded-lg flex items-center justify-center shrink-0 group-hover:bg-teal-500 group-hover:border-teal-500 transition-all duration-300">
+          <div class="w-7 h-7 bg-white border border-slate-200 shadow-sm rounded-lg flex items-center justify-center shrink-0 group-hover:bg-primary-500 group-hover:border-primary-500 transition-all duration-300">
             <span class="font-bold text-xs text-slate-500 group-hover:text-white transition-colors duration-200">03</span>
           </div>
           <p class="text-slate-600 text-sm leading-7">以上知晓后，点击下方按钮启动应用</p>
@@ -97,7 +97,7 @@ const handleLaunch = async () => {
     <button
       @click="handleLaunch"
       :disabled="isLoading"
-      class="group w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white py-4 rounded-xl font-bold text-lg transition-all shadow-lg shadow-teal-500/20 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
+      class="group w-full bg-gradient-to-r from-primary-500 to-blue-600 hover:from-primary-600 hover:to-blue-700 text-white py-4 rounded-xl font-bold text-lg transition-all shadow-lg shadow-primary-500/20 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
     >
         <span class="flex items-center justify-center" v-if="!isLoading">
           <i class="ri-rocket-fill mr-2 group-hover:translate-x-1 transition-transform"></i>

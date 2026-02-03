@@ -44,7 +44,16 @@ const currentSession = ref(sessions.value[0]);
     <div class="h-14 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-sm z-10 relative">
       <div class="flex items-center space-x-6">
         <!-- 自动回复开关 -->
-        <div class="flex items-center space-x-2 cursor-pointer" @click="autoReply = !autoReply">
+        <div 
+          class="flex items-center space-x-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1890FF] rounded-lg p-1" 
+          @click="autoReply = !autoReply"
+          @keydown.enter.prevent="autoReply = !autoReply"
+          @keydown.space.prevent="autoReply = !autoReply"
+          role="switch"
+          :aria-checked="autoReply"
+          tabindex="0"
+          aria-label="自动回复开关"
+        >
           <div 
             class="w-9 h-5 rounded-full relative transition-colors duration-300 ease-in-out"
             :class="autoReply ? 'bg-[#1890FF]' : 'bg-slate-300'"

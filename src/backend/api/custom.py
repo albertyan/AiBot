@@ -6,13 +6,14 @@ from sqlalchemy import delete, select, func, distinct, update
 
 from db.get_db import get_db
 from auto.WeChatAutoExt import ContactsExt
-from db.models import Friends, Groups, Message, ContactTags
-from environment import state, current_user
+from db.models import Friends, Groups, ContactTags
+from utils.response_util import ResponseUtil
+from environment import CurrentUserDep, state
 
 custom_router = APIRouter()
 
 @custom_router.get("/sync_friend")
-async def sync_friend(db: AsyncSession = Depends(get_db)) -> Any:
+async def sync_friend(current_user: CurrentUserDep, db: AsyncSession = Depends(get_db)) -> Any:
     '''
     同步好友列表
     '''
@@ -20,9 +21,6 @@ async def sync_friend(db: AsyncSession = Depends(get_db)) -> Any:
     # '标签':tag,'描述':descrption,'朋友权限':permission,'共同群聊':f'{common_group_num}','个性签名':signature,'来源':source}
     # 同步好友列表
 
-    current_user = state.get_current_user()
-    if not current_user:
-        return Message(code=400, message="当前用户不存在")
     # 删除当前用户的好友列表
     stmt = delete(Friends).where(Friends.account_id == current_user.wxNumber)
     await db.execute(stmt)
@@ -77,18 +75,14 @@ async def sync_friend(db: AsyncSession = Depends(get_db)) -> Any:
         db.add(new_tag)
     # 提交事务
     await db.commit()
+    return ResponseUtil.success(msg="好友列表同步完成", data={'friends': friends, 'tags': list(tag_counts.keys())})
 
-    return Message(code=200, message="好友列表同步完成", data={'friends': friends, 'tags': list(tag_counts.keys())})
-
-@custom_router.get("/sync_group", response_model=Message)
-async def sync_group(db: AsyncSession = Depends(get_db)) -> Any:
+@custom_router.get("/sync_group")
+async def sync_group(current_user: CurrentUserDep, db: AsyncSession = Depends(get_db)) -> Any:
     '''
     同步群聊列表
     '''
     # 同步群聊列表
-    current_user = state.get_current_user()
-    if not current_user:
-        return Message(code=400, message="当前用户不存在")
     # 删除当前用户的群聊列表
     stmt = delete(Groups).where(Groups.account_id == current_user.wxNumber)
     await db.execute(stmt)
@@ -112,85 +106,70 @@ async def sync_group(db: AsyncSession = Depends(get_db)) -> Any:
         db.add(new_group)
     # 提交事务
     await db.commit()
-    return Message(code=200, message="群聊列表同步完成", data={'groups': groups, 'tags': list('group')})
+    return ResponseUtil.success(msg="群聊列表同步完成", data={'groups': groups, 'tags': list('group')})
 
 
-@custom_router.get("/friends", response_model=Message)
-async def get_all_friends(db: AsyncSession = Depends(get_db)) -> Any:
+@custom_router.get("/friends")
+async def get_all_friends(current_user: CurrentUserDep, db: AsyncSession = Depends(get_db)) -> Any:
     '''
     获取所有好友
     '''
-    current_user = state.get_current_user()
-    if not current_user:
-        return Message(code=400, message="当前用户不存在")
     # 查询所有好友
     stmt = select(Friends).where(Friends.account_id == current_user.wxNumber, Friends.del_flag == 0)
     result = await db.execute(stmt)
     friends = result.scalars().all()
     friends = [f.to_dict() for f in friends]
-    return Message(code=200, message="好友列表查询完成", data=friends)
+    return ResponseUtil.success(msg="好友列表查询完成", data=friends)
 
 
 @custom_router.get("/groups")
-async def get_all_groups(db: AsyncSession = Depends(get_db)) -> Message:
+async def get_all_groups(current_user: CurrentUserDep, db: AsyncSession = Depends(get_db)) -> Any:
     '''
     获取所有群聊
     '''
-    current_user = state.get_current_user()
-    if not current_user:
-        return Message(code=400, message="当前用户不存在")
     # 查询所有群聊
     stmt = select(Groups).where(Groups.account_id == current_user.wxNumber, Groups.del_flag == 0)
     result = await db.execute(stmt)
     groups = result.scalars().all()
     groups = [g.to_dict() for g in groups]
-    return Message(code=200, message="群聊列表查询完成", data=groups)
+    return ResponseUtil.success(msg="群聊列表查询完成", data=groups)
 
 
 @custom_router.get("/friend_tags")
-async def get_all_friend_tags(db: AsyncSession = Depends(get_db)) -> Message:
+async def get_all_friend_tags(current_user: CurrentUserDep, db: AsyncSession = Depends(get_db)) -> Any:
     '''
     获取所有好友标签
     '''
-    current_user = state.get_current_user()
-    if not current_user:
-        return Message(code=400, message="当前用户不存在")
     # 查询所有好友标签
     stmt = select(ContactTags).where(ContactTags.account_id == current_user.wxNumber, ContactTags.tag != 'group', ContactTags.del_flag == 0)
     result = await db.execute(stmt)
     tags = result.scalars().all()
     tags = [t.to_dict() for t in tags]
-    return Message(code=200, message="好友标签查询完成", data=tags)
+    return ResponseUtil.success(msg="好友标签查询完成", data=tags)
 
 
-@custom_router.get("/group_tags", response_model=Message)
-async def get_all_group_tags(db: AsyncSession = Depends(get_db)) -> Any:
+@custom_router.get("/group_tags")
+async def get_all_group_tags(current_user: CurrentUserDep, db: AsyncSession = Depends(get_db)) -> Any:
     '''
     获取所有群聊标签
     '''
-    current_user = state.get_current_user()
-    if not current_user:
-        return Message(code=400, message="当前用户不存在")
     # 查询所有群聊标签
     stmt = select(distinct(Groups.tag)).where(Groups.account_id == current_user.wxNumber, Groups.del_flag == 0)
     result = await db.execute(stmt)
     tags = result.scalars().all()
     # 过滤空标签
     tags = [t for t in tags if t]
-    return Message(code=200, message="群聊标签查询完成", data=tags)
+    return ResponseUtil.success(msg="群聊标签查询完成", data=tags)
 
-@custom_router.post("/set_group_tags", response_model=Message)
-async def set_group_tags(groups: list[str], tag: str, db: AsyncSession = Depends(get_db)) -> Any:
+@custom_router.post("/set_group_tags")
+async def set_group_tags(groups: list[str], tag: str, current_user: CurrentUserDep, db: AsyncSession = Depends(get_db)) -> Any:
     '''
     设置群聊标签
     '''
-    current_user = state.get_current_user()
-    if not current_user:
-        return Message(code=400, message="当前用户不存在")
     # 设置群聊标签
     for group in groups:
         stmt = update(Groups).where(Groups.account_id == current_user.wxNumber, Groups.name == group).values(tag=tag)
         await db.execute(stmt)
     # 提交事务
     await db.commit()
-    return Message(code=200, message="群聊标签设置完成")
+    return ResponseUtil.success(msg="群聊标签设置完成")

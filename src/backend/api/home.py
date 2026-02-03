@@ -1,4 +1,5 @@
 import time
+from typing import Any
 from loguru import logger
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,10 +9,12 @@ from pywinauto import mouse
 
 
 from db.get_db import get_db
-from db.models import Friends, Groups, WechatAccounts,Message
+from db.models import Friends, Groups, WechatAccounts
 from auto.WeChatToolsExt import ToolsExt,NavigatorExt
 from auto.UielementsExt import PopUpProfileWindow
-from environment import CurrentUser, state
+from environment import CurrentUser, CurrentUserDep, state
+
+from utils.response_util import ResponseUtil
 
 PopUpProfileWindow = PopUpProfileWindow()
 
@@ -20,11 +23,11 @@ Timings.slow()
 home_router = APIRouter()
 
 @home_router.get("/init")
-def init():
-    return {"message": f"Welcome to the AI Bot API!"}
+def init() -> Any:
+    return ResponseUtil.success(msg="Welcome to the AI Bot API!")
 
 @home_router.get("/dashboard")
-async def get_dashboard_data(db: AsyncSession = Depends(get_db)) : 
+async def get_dashboard_data(db: AsyncSession = Depends(get_db)) -> Any : 
     # Get user info (Assuming single user or taking the first one for now)
     main_window= NavigatorExt.open_weixin()
     ToolsExt.cancel_pin(main_window)
@@ -34,11 +37,11 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)) :
     logger.info(f"微信是否运行中: {is_running}")
     if not is_running:
         logger.error("微信未运行，请先启动微信")
-        return Message(code=400,message="微信未运行，请先启动微信")
+        return ResponseUtil.error("微信未运行，请先启动微信")
     # 等待窗口出现
     if not main_window.exists(timeout=0.1):
         logger.error("未找到微信主窗口，请确保已登录并打开主界面")
-        return Message(code=400,message="未找到微信主窗口，请确保已登录并打开主界面")
+        return ResponseUtil.error("未找到微信主窗口，请确保已登录并打开主界面")
     # 恢复窗口状态（如果最小化）
     try:
         if main_window.get_show_state() == 2: # 2 代表最小化
@@ -46,7 +49,7 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)) :
         main_window.set_focus()
     except Exception as e:
         logger.error(f"窗口操作异常: {e}")
-        return Message(code=400,message=f"窗口操作异常: {e}")
+        return ResponseUtil.error(f"窗口操作异常: {e}")
     # 获取窗口对象和坐标
     main = main_window.wrapper_object()
     rect = main.rectangle()
@@ -60,7 +63,7 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)) :
         logger.info("个人信息窗口已打开")
     except Exception:
         logger.error("个人信息窗口未打开(超时)")
-        return Message(code=400,message="个人信息窗口未打开(超时)") 
+        return ResponseUtil.error("个人信息窗口未打开(超时)") 
     # 使用 child_window 配合 found_index 快速获取，避免遍历整个树
     time.sleep(0.5)
     try:
@@ -70,7 +73,7 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)) :
         wxNumber = my.child_window(found_index=0, **PopUpProfileWindow.ContactProfileTextView).window_text()
     except Exception as e:
         logger.error(f"获取个人微信号时出错: {e}")
-        return Message(code=400,message=f"获取个人微信号时出错: {e}")
+        return ResponseUtil.error(f"获取个人微信号时出错: {e}")
     finally:
         main_window.set_focus()
 
@@ -87,31 +90,39 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)) :
         my.nickname = nickname
         await db.commit()
     state.set_current_user(CurrentUser(nickname=nickname, number=wxNumber))
-    return Message(
-        code=200,
-        message=(f"当前微信号: {wxNumber}, 状态: {'在线' if is_running else '离线'}"),
-        data={
-            "wxNumber": wxNumber,
-            "nickname": nickname,
-            "status": "在线" if is_running else "离线"}
-        )
+    # 获取好友数量
+    stmt = select(func.count(Friends.id)).where(Friends.account_id == wxNumber)
+    result = await db.execute(stmt)
+    friend_count = result.scalar()
+    # 获取群数量
+    stmt = select(func.count(Groups.id)).where(Groups.account_id == wxNumber)
+    result = await db.execute(stmt)
+    group_count = result.scalar()
+
+    return ResponseUtil.success(
+            msg=(f"当前微信号: {wxNumber}, 状态: {'在线' if is_running else '离线'}"),
+            data={
+                "wxNumber": wxNumber,
+                "nickname": nickname,
+                "friendCount": friend_count,
+                "groupCount": group_count,
+                "status": "在线" if is_running else "离线"}
+            )
 
 @home_router.get("/friendCount")
-async def get_friendCount(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(func.count(Friends.id)))
+async def get_friendCount(current_user: CurrentUserDep, db: AsyncSession = Depends(get_db)) -> Any:
+    result = await db.execute(select(func.count(Friends.id)).where(Friends.account_id == current_user.wxNumber))
     friend_count = result.scalar()
-    return Message(
-        code=200,
-        message="获取好友数量成功",
+    return ResponseUtil.success(
+        msg="获取好友数量成功",
         data=friend_count
     )
 
 @home_router.get("/groupCount")
-async def get_groupCount(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(func.count(Groups.id)))
+async def get_groupCount(current_user: CurrentUserDep, db: AsyncSession = Depends(get_db)) -> Any:
+    result = await db.execute(select(func.count(Groups.id)).where(Groups.account_id == current_user.wxNumber))
     group_count = result.scalar()
-    return Message(
-        code=200,
-        message="获取群数量成功",
+    return ResponseUtil.success(    
+        msg="获取群数量成功",
         data=group_count
     )

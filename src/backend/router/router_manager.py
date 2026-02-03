@@ -11,6 +11,7 @@ from loguru import logger
 from environment import env, EnvMode
 import importlib.util
 from config.env import *
+from utils.response_util import ResponseUtil
 
 router = APIRouter()
 
@@ -58,4 +59,6 @@ async def favicon():
 # 新增心跳/检查接口
 @router.get("/api/c_hello")
 def c_hello(asker: str = None):
-    return {"message": "hello", "asker": asker}
+    # 在心跳接口内记录简要调用者信息，原因：便于定位谁在调用健康检查，同时避免敏感信息泄露
+    logger.info(f"/api/c_hello called, asker={asker or 'unknown'}")
+    return ResponseUtil.success(data={"message": "hello", "asker": asker})

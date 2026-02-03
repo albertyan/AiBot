@@ -3,17 +3,15 @@
 @tailwind utilities;
 
 /* 
-  为什么设置全局字体为“Microsoft YaHei”：
-  - Windows 端默认可用，中文显示更圆润、笔画清晰，阅读体验更佳
-  - 在深色与浅色背景下都具备良好识别度，适合后台系统场景
-  - 提供系统与常见无衬线字体作为降级，保证跨平台兼容
+  全局字体设置：
+  - 优先使用 Segoe UI (Windows 11 原生字体)，英文和数字显示更现代、清晰
+  - 中文回退到 Microsoft YaHei (微软雅黑)
+  - 使用 Tailwind 配置的 font-sans 栈
 */
 @layer base {
   html {
-    /* 将基准字体从默认的 16px 调整为 14px，使 Tailwind 的 rem 单位整体缩小，实现“整体小一号” */
+    /* 保持 14px 基准字号，适合紧凑型工具界面 */
     font-size: 14px;
-  }
-  html, body, #app {
-    font-family: "Microsoft YaHei", "Segoe UI", system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB", "Arial", "Noto Sans CJK SC", sans-serif;
+    @apply font-sans text-slate-800 bg-slate-50;
   }
 }

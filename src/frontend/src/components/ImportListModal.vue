@@ -66,7 +66,7 @@ const handleUpload = async () => {
         emit('success', result.data);
         handleCancel();
       } else {
-        message.error(result.message || '导入失败');
+        message.error(result.msg || '导入失败');
       }
     } catch (error) {
       message.error('上传出错: ' + error.message);

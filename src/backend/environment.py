@@ -1,3 +1,9 @@
+from typing import Annotated
+
+from fastapi import Depends, HTTPException
+from loguru import logger
+
+
 class EnvMode:
     DEV = "dev"
     PROD = "prod"
@@ -37,7 +43,20 @@ class GlobalState:
         return self.current_user
 
 state = GlobalState()
-current_user = CurrentUser()
+
+def get_current_user() -> CurrentUser:
+    """
+    获取当前登录用户
+    """
+    user = state.get_current_user()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not user.wxNumber:
+        raise HTTPException(status_code=400, detail="Not Invaild User")
+    logger.info(f"get_current_user: {user.wxNumber}")
+    return user
+
+CurrentUserDep = Annotated[CurrentUser, Depends(get_current_user)]
 
 if __name__ == "__main__":
     # env = EnvMode()

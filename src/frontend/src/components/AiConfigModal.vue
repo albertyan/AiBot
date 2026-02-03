@@ -328,7 +328,12 @@ const handleSave = () => {
                      <template #title>
                        示例：D:\ProgramData\tencent_cache\WeChat Files\ABC123，注意！！最后一个目录一定是当前登录的微信号
                      </template>
-                     <div class="w-4 h-4 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold cursor-help">?</div>
+                     <button 
+                       class="w-5 h-5 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold cursor-help hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500"
+                       aria-label="查看帮助"
+                     >
+                       ?
+                     </button>
                    </Tooltip>
                  </div>
                  <input 

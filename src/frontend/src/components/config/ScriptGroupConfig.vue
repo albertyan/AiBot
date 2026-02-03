@@ -16,7 +16,7 @@ const handleSaveConfig = async () => {
     if (res.code === 200) {
       alert('保存成功');
     } else {
-      alert('保存失败: ' + res.message);
+      alert('保存失败: ' + res.msg);
     }
   } catch (error) {
     console.error('保存失败:', error);

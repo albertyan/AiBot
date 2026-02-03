@@ -43,13 +43,13 @@ const handleOk = async () => {
     const res = await setGroupTags(groupNamesList, tagName.value);
     
     if (res.code === 200) {
-      message.success(res.message || `已为 ${props.selectedGroups.length} 个群聊设置标签: ${tagName.value}`);
+      message.success(res.msg || `已为 ${props.selectedGroups.length} 个群聊设置标签: ${tagName.value}`);
       emit('confirm', tagName.value);
       emit('success');
       visible.value = false;
       tagName.value = ''; // Reset
     } else {
-      message.error(res.message || '设置群标签失败');
+      message.error(res.msg || '设置群标签失败');
     }
   } catch (error) {
     message.error(error.message || '设置群标签发生错误');

@@ -65,10 +65,10 @@ const handleSyncGroups = async () => {
   try {
     const res = await syncGroup();
     if (res.code === 200) {
-      message.success(res.message || '群聊同步成功');
+      message.success(res.msg || '群聊同步成功');
       emit('sync-success');
     } else {
-      message.error(res.message || '群聊同步失败');
+      message.error(res.msg || '群聊同步失败');
     }
   } catch (error) {
     message.error(error.message || '群聊同步发生错误');

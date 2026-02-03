@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue';
+import { message } from 'ant-design-vue';
 import TagSelectModal from '../TagSelectModal.vue';
 
 // 朋友圈运营配置状态
@@ -20,7 +21,7 @@ const safeParseInt = (value, fallback) => {
 
 const handleStartMomentsTask = () => {
   if (totalPosts.value < 1 || postsPerGroup.value < 1 || intervalMinutes.value < 1) {
-    alert('请确保所有数值均大于 0');
+    message.warning('请确保所有数值均大于 0');
     return;
   }
   console.log('Task started with config:', {

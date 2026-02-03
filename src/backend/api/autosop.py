@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File
-from db.models import Message
+from utils.response_util import ResponseUtil
 import pandas as pd
 import io
 
@@ -24,14 +24,14 @@ async def upload_friend_list(file: UploadFile = File(...)):
         elif filename.endswith('.csv'):
             df = pd.read_csv(io.BytesIO(content), header=None)
         else:
-            return Message(code=400, message="不支持的文件格式")
+            return ResponseUtil.failure(msg="不支持的文件格式")
 
         if df is None:
-             return Message(code=400, message="文件读取失败")
+             return ResponseUtil.failure(msg="文件读取失败")
              
         # 确保至少有3列
         if len(df.columns) < 3:
-            return Message(code=400, message="文件格式错误，至少需要3列（微信号/手机号，备注，标签）")
+            return ResponseUtil.failure(msg="文件格式错误，至少需要3列（微信号/手机号，备注，标签）")
 
         # 首行是否为标题的判断逻辑
         # 为什么需要判断：首行常见包含“微信号/手机号/备注/标签”等字样，直接纳入会污染数据
@@ -66,7 +66,7 @@ async def upload_friend_list(file: UploadFile = File(...)):
             if item["account"].strip():
                 data.append(item)
                 
-        return Message(code=200, message="上传成功", data=data)
+        return ResponseUtil.success(msg="上传成功", data=data)
 
     except Exception as e:
-        return Message(code=500, message=f"处理文件失败: {str(e)}")
+        return ResponseUtil.error(msg=f"处理文件失败: {str(e)}")

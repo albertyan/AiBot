@@ -11,7 +11,7 @@
   "dependencies": {
     "ant-design-vue": "^4.2.6",
     "lucide-vue-next": "^0.344.0",
-    "pinia": "^2.1.7",
+    "pinia": "^3.0.4",
     "remixicon": "^4.1.0",
     "vue": "^3.4.0",
     "vue-router": "^4.2.5"

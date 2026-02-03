@@ -204,11 +204,14 @@ const selectedGroupObjects = computed(() => {
     .filter((c) => c !== undefined);
 });
 
+const selectedFriendSet = computed(() => new Set(selectedFriendIds.value));
+const selectedGroupSet = computed(() => new Set(selectedGroupIds.value));
+
 const isSelected = (id) => {
   if (activeTab.value === 'friends') {
-    return selectedFriendIds.value.includes(id);
+    return selectedFriendSet.value.has(id);
   } else {
-    return selectedGroupIds.value.includes(id);
+    return selectedGroupSet.value.has(id);
   }
 };
 
@@ -403,9 +406,10 @@ const canSetGroupTags = computed(() => {
                     </div>
                     <button 
                       @click="deselectFriend(item.id)"
-                      class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors"
+                      class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors -mr-1 hover:bg-red-50 rounded-full"
+                      aria-label="移除好友"
                     >
-                      <i class="ri-close-line"></i>
+                      <i class="ri-close-line text-lg"></i>
                     </button>
                   </div>
                   <!-- Summary Card -->
@@ -436,9 +440,10 @@ const canSetGroupTags = computed(() => {
                     </div>
                     <button 
                       @click="deselectGroup(item.id)"
-                      class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors"
+                      class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors -mr-1 hover:bg-red-50 rounded-full"
+                      aria-label="移除群聊"
                     >
-                      <i class="ri-close-line"></i>
+                      <i class="ri-close-line text-lg"></i>
                     </button>
                   </div>
                   <!-- Summary Card -->
