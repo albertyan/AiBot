@@ -100,3 +100,14 @@ export const deleteAgent = async (id) => {
     throw new Error('删除智能体失败');
   }
 };
+
+export const setDefaultAgent = async (id) => {
+  const response = await fetch(`/api/setting/agents/${id}/default`, {
+    method: 'PUT'
+  });
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('设置默认智能体失败');
+  }
+};

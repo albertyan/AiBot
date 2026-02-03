@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { message } from 'ant-design-vue';
 import AddAgentModal from './AddAgentModal.vue';
-import { getAgents, addAgent, deleteAgent } from '../../api/setting';
+import { getAgents, addAgent, deleteAgent, setDefaultAgent } from '../../api/setting';
 
 /**
  * 智能体管理
@@ -50,9 +50,19 @@ const handleAddAgent = async (payload) => {
 
 // 暂不支持单独设置默认，目前仅在添加时设置生效
 // 如果需要支持单独设置默认，需要后端增加更新接口
-const setDefault = (id) => {
-  agents.value.forEach(a => a.isDefault = (a.id === id));
-  message.info('设置默认成功 (仅当前会话有效，刷新后失效)');
+const setDefault = async (id) => {
+  try {
+    const res = await setDefaultAgent(id);
+    if (res.code === 200) {
+      message.success('设置默认成功');
+      loadAgents();
+    } else {
+      message.error(res.msg || '设置失败');
+    }
+  } catch (error) {
+    console.error(error);
+    message.error('设置默认出错');
+  }
 };
 
 const removeAgent = async (id) => {

@@ -80,7 +80,7 @@ const handleSubmit = () => {
   visible.value = false;
   // 重置表单，原因：避免上一次填写内容影响下一次添加
   form.value = {
-    platform: 'yuanbao',
+    platform: 'coze',
     name: '',
     botId: '',
     token: '',

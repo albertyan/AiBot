@@ -188,6 +188,48 @@ def save_agent(current_user: CurrentUserDep, agent: dict) -> Any:
     return ResponseUtil.success(data={"agents": agents})
 
 
+@setting_router.put("/agents/{agent_id}/default")
+def set_default_agent(current_user: CurrentUserDep, agent_id: str) -> Any:
+    '''
+    设置默认智能体
+    '''
+    if not agent_id:
+        return ResponseUtil.error(msg="智能体ID不能为空")
+    
+    # 判断 agents.json 是否存在
+    json_path = os.path.join(get_base_dir(), "agents.json")
+    if not os.path.exists(json_path):
+        return ResponseUtil.error(msg="配置文件不存在")
+    
+    try:
+        with open(json_path, "r", encoding='utf-8') as f:
+            data = json.load(f)
+    except:
+        return ResponseUtil.error(msg="agents.json 格式错误")
+    
+    agents = data.get("agents", [])
+    found = False
+    
+    # 先检查ID是否存在
+    for agent in agents:
+        if agent.get("id") == agent_id:
+            found = True
+            break
+            
+    if not found:
+        return ResponseUtil.error(msg="智能体不存在")
+
+    # 更新状态：目标设为True，其他设为False
+    for agent in agents:
+        agent["isDefault"] = (agent.get("id") == agent_id)
+    
+    # 写入配置文件  
+    with open(json_path, "w", encoding='utf-8') as f:
+        json.dump({"agents": agents}, f, indent=4, ensure_ascii=False)
+    
+    return ResponseUtil.success()
+
+
 @setting_router.delete("/agents/{agent_id}")
 def del_agent(current_user: CurrentUserDep, agent_id: str) -> Any:
     '''
