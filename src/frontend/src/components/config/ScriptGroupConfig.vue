@@ -1,10 +1,15 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { getGreetingConfig, saveGreetingConfig } from '../../api/setting';
+import { ref, computed, onMounted, watch } from 'vue';
+import { message } from 'ant-design-vue';
+import { getGreetingConfig, saveGreetingConfig, getAgents } from '../../api/setting';
+import AddScriptModal from './AddScriptModal.vue';
 
 const scriptGroups = ref([]);
+const isInitializing = ref(true);
 
-const handleSaveConfig = async () => {
+const saveConfig = async () => {
+  if (isInitializing.value) return;
+
   try {
     const config = {
       greeting_config: scriptGroups.value.map(group => ({
@@ -14,13 +19,13 @@ const handleSaveConfig = async () => {
     };
     const res = await saveGreetingConfig(config);
     if (res.code === 200) {
-      alert('保存成功');
+      message.success('配置已保存');
     } else {
-      alert('保存失败: ' + res.msg);
+      message.error('保存失败: ' + res.msg);
     }
   } catch (error) {
     console.error('保存失败:', error);
-    alert('保存失败');
+    message.error('保存失败');
   }
 };
 
@@ -36,24 +41,37 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error('获取话术配置失败:', error);
+    message.error('获取话术配置失败');
+  }
+
+  // 获取智能体列表
+  try {
+    const agentsRes = await getAgents();
+    if (agentsRes.code === 200 && agentsRes.data && agentsRes.data.agents) {
+      agents.value = agentsRes.data.agents;
+    }
+  } catch (error) {
+    console.error('获取智能体列表失败:', error);
+  } finally {
+    setTimeout(() => {
+      isInitializing.value = false;
+    }, 100);
   }
 });
+
+watch(scriptGroups, () => {
+  saveConfig();
+}, { deep: true });
+
 const showAddScriptGroup = ref(false);
 const newScriptGroupName = ref('');
 
 // 添加话术相关状态
 const showAddScriptModal = ref(false);
 const currentEditingGroupId = ref(null);
-const scriptType = ref('text'); // text, file, agent
-const scriptContent = ref('');
-const selectedAgent = ref('');
-const agentPrompt = ref('');
-const selectedFile = ref(null);
 
-// 模拟智能体列表
-const agents = ref([
-  { id: '1', name: '过敏', botId: '75326*****55496' },
-]);
+// 智能体列表
+const agents = ref([]);
 
 const handleAddScriptGroup = () => {
   if (newScriptGroupName.value.trim()) {
@@ -69,52 +87,15 @@ const handleAddScriptGroup = () => {
 
 const openAddScriptModal = (groupId) => {
   currentEditingGroupId.value = groupId;
-  scriptType.value = 'text';
-  scriptContent.value = '';
-  selectedAgent.value = '';
-  agentPrompt.value = '';
-  selectedFile.value = null;
   showAddScriptModal.value = true;
 };
 
-const closeAddScriptModal = () => {
-  showAddScriptModal.value = false;
-  currentEditingGroupId.value = null;
-};
-
-const handleSaveScript = () => {
+const handleAddScript = (newScript) => {
   const group = scriptGroups.value.find(g => g.id === currentEditingGroupId.value);
-  if (!group) return;
-
-  let newScript = null;
-  if (scriptType.value === 'text') {
-    const content = scriptContent.value.trim();
-    if (content) {
-      newScript = { type: 'text', content };
-    }
-  } else if (scriptType.value === 'agent') {
-    const agent = agents.value.find(a => a.id === selectedAgent.value);
-    if (agent) {
-      const prompt = agentPrompt.value.trim();
-      newScript = { type: 'agent', content: `${agent.name} - ${prompt}`, agentId: agent.id, prompt };
-    }
-  } else if (scriptType.value === 'file') {
-    if (selectedFile.value) {
-      newScript = { type: 'file', content: selectedFile.value.name, file: selectedFile.value };
-    }
-  }
-
-  if (newScript) {
+  if (group && newScript) {
     group.scripts.push(newScript);
-    closeAddScriptModal();
   }
-};
-
-const handleFileChange = (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    selectedFile.value = file;
-  }
+  // Modal will close itself via v-model binding updates
 };
 
 const removeScript = (group, index) => {
@@ -133,12 +114,6 @@ const removeScriptGroup = (index) => {
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold text-slate-800">话术组配置（可配合智能体）</h1>
       <div class="space-x-3">
-        <button
-          @click="handleSaveConfig"
-          class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
-        >
-          保存配置
-        </button>
         <button
           @click="showAddScriptGroup = true"
           class="px-4 py-2 bg-[#4A90E2] hover:bg-[#357ABD] text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
@@ -168,7 +143,6 @@ const removeScriptGroup = (index) => {
               <span v-if="script.type === 'file'" class="flex-shrink-0 px-2.5 py-1 text-xs font-medium text-orange-600 bg-orange-100 rounded-md border border-orange-200">文件</span>
               <span v-else-if="script.type === 'text'" class="flex-shrink-0 px-2.5 py-1 text-xs font-medium text-green-600 bg-green-100 rounded-md border border-green-200">文本</span>
               <span v-else-if="script.type === 'agent'" class="flex-shrink-0 px-2.5 py-1 text-xs font-medium text-slate-600 bg-slate-200 rounded-md border border-slate-300">智能体</span>
-              
               <!-- 内容 -->
               <p class="text-sm text-slate-700 truncate select-all">{{ script.content }}</p>
             </div>
@@ -232,124 +206,10 @@ const removeScriptGroup = (index) => {
     </div>
 
     <!-- 添加话术内容弹窗 -->
-    <div v-if="showAddScriptModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4">
-        <div class="flex items-center justify-between p-6 border-b border-slate-200">
-          <h2 class="text-xl font-semibold text-slate-800">添加话术内容</h2>
-          <button
-            @click="closeAddScriptModal"
-            class="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <i class="ri-close-line text-xl text-slate-600"></i>
-          </button>
-        </div>
-        
-        <div class="p-6 space-y-6">
-          <!-- 类型选择 -->
-          <div class="flex items-center space-x-6">
-            <label class="text-sm font-medium text-slate-700 w-12 text-right">类型</label>
-            <div class="flex items-center space-x-6">
-              <label class="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" v-model="scriptType" value="text" class="w-4 h-4 text-[#4A90E2] border-slate-300 focus:ring-[#4A90E2]">
-                <span class="text-sm text-slate-700">文本</span>
-              </label>
-              <label class="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" v-model="scriptType" value="file" class="w-4 h-4 text-[#4A90E2] border-slate-300 focus:ring-[#4A90E2]">
-                <span class="text-sm text-slate-700">文件</span>
-              </label>
-              <label class="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" v-model="scriptType" value="agent" class="w-4 h-4 text-[#4A90E2] border-slate-300 focus:ring-[#4A90E2]">
-                <span class="text-sm text-slate-700">智能体</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- 智能体配置 -->
-          <template v-if="scriptType === 'agent'">
-            <!-- 智能体选择 -->
-            <div class="flex items-center space-x-6">
-              <label class="text-sm font-medium text-slate-700 w-12 text-right">智能体</label>
-              <div class="flex-1 relative">
-                 <select
-                  v-model="selectedAgent"
-                  class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent appearance-none cursor-pointer"
-                >
-                  <option value="">请选择智能体</option>
-                  <option v-for="agent in agents" :key="agent.id" :value="agent.id">{{ agent.name }}</option>
-                </select>
-                <i class="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
-              </div>
-            </div>
-
-            <!-- 提示词输入 -->
-            <div class="flex items-start space-x-6">
-              <label class="text-sm font-medium text-slate-700 w-12 text-right mt-2">提示词</label>
-              <div class="flex-1 relative">
-                <textarea
-                  v-model="agentPrompt"
-                  placeholder="请按要求生成话术"
-                  rows="4"
-                  maxlength="500"
-                  class="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent resize-none"
-                ></textarea>
-                <div class="absolute bottom-3 right-3 text-xs text-slate-400">
-                  {{ agentPrompt.length }}/500
-                </div>
-              </div>
-            </div>
-          </template>
-
-          <!-- 内容输入 (文本/文件) -->
-          <div v-else class="flex items-start space-x-6">
-            <label class="text-sm font-medium text-slate-700 w-12 text-right mt-2">内容</label>
-            
-            <div class="flex-1">
-              <!-- 文本输入 -->
-              <div v-if="scriptType === 'text'" class="relative">
-                <textarea
-                  v-model="scriptContent"
-                  placeholder="请输入话术文本"
-                  rows="4"
-                  maxlength="300"
-                  class="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent resize-none"
-                ></textarea>
-                <div class="absolute bottom-3 right-3 text-xs text-slate-400">
-                  {{ scriptContent.length }}/300
-                </div>
-              </div>
-
-              <!-- 文件上传 -->
-              <div v-else-if="scriptType === 'file'" class="border border-slate-300 rounded-lg p-4">
-                 <input type="file" @change="handleFileChange" class="block w-full text-sm text-slate-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-full file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-blue-50 file:text-[#4A90E2]
-                    hover:file:bg-blue-100
-                  "/>
-                  <div v-if="selectedFile" class="mt-2 text-sm text-slate-600">
-                    已选文件: {{ selectedFile.name }}
-                  </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-end space-x-3 p-6 border-t border-slate-200">
-          <button
-            @click="closeAddScriptModal"
-            class="px-6 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors whitespace-nowrap"
-          >
-            取消
-          </button>
-          <button
-            @click="handleSaveScript"
-            class="px-6 py-2.5 bg-[#4A90E2] hover:bg-[#357ABD] text-white rounded-lg font-medium transition-colors whitespace-nowrap"
-          >
-            确认
-          </button>
-        </div>
-      </div>
-    </div>
+    <AddScriptModal
+      v-model="showAddScriptModal"
+      :agents="agents"
+      @submit="handleAddScript"
+    />
   </div>
 </template>

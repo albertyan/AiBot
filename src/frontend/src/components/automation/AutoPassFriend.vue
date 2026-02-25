@@ -153,8 +153,8 @@ const handleStartAutoPassTask = () => {
                 class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent appearance-none cursor-pointer"
               >
                 <option value="">选择打招呼话术组</option>
-                <option value="话术1">话术组1</option>
-                <option value="话术2">话术组2</option>
+                <option value="script_1">话术组1</option>
+                <option value="script_2">话术组2</option>
               </select>
               <i class="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
             </div>

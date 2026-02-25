@@ -1,16 +1,87 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, watch } from 'vue';
+import { message } from 'ant-design-vue';
+import { getAgents, getMomentSettings, saveMomentSettings } from '../../api/setting';
 
 const commentLimit = ref(10);
 const commentPerFriend = ref(2);
-const interactionMode = ref('点赞&评论');
+const interactionMode = ref('like_and_comment');
 const selectedAgent = ref('');
 const blacklistText = ref('');
+const agents = ref([]);
+const originalSettings = ref({});
+const isInitializing = ref(true);
 
 const safeParseInt = (value, fallback) => {
   const parsed = parseInt(value);
   return isNaN(parsed) ? fallback : Math.max(1, parsed);
 };
+
+onMounted(async () => {
+  try {
+    // 获取智能体列表
+    const agentsData = await getAgents();
+    if (agentsData && agentsData.data && agentsData.data.agents) {
+      agents.value = agentsData.data.agents;
+    }
+
+    // 获取朋友圈配置
+    const settingsData = await getMomentSettings();
+    if (settingsData && settingsData.data) {
+      const settings = settingsData.data.moment_settings || {};
+      originalSettings.value = settings;
+      
+      if (settings.commentLimit !== undefined) commentLimit.value = settings.commentLimit;
+      if (settings.perFriendLimit !== undefined) commentPerFriend.value = settings.perFriendLimit;
+      
+      if (settings.interactionMode) {
+        interactionMode.value = settings.interactionMode;
+      }
+      
+      if (settings.agentId) selectedAgent.value = settings.agentId;
+      if (settings.blacklist) blacklistText.value = settings.blacklist;
+    }
+  } catch (error) {
+    console.error('加载配置失败:', error);
+  } finally {
+    setTimeout(() => {
+      isInitializing.value = false;
+    }, 100);
+  }
+});
+
+const saveSettings = async () => {
+  if (isInitializing.value) return;
+
+  const config = {
+    moment_settings: {
+      ...originalSettings.value,
+      agentId: selectedAgent.value,
+      commentLimit: commentLimit.value,
+      perFriendLimit: commentPerFriend.value,
+      autoLike: interactionMode.value !== 'comment_only',
+      interactionMode: interactionMode.value,
+      blacklist: blacklistText.value
+    }
+  };
+
+  try {
+    await saveMomentSettings(config);
+    message.success('配置已保存');
+    // 更新原始配置，以便下次保存时基于最新状态
+    originalSettings.value = config.moment_settings;
+  } catch (error) {
+    console.error('保存配置失败:', error);
+    message.error('保存失败，请重试');
+  }
+};
+
+watch(
+  [commentLimit, commentPerFriend, interactionMode, selectedAgent, blacklistText],
+  () => {
+    saveSettings();
+  }
+);
 </script>
 
 <template>
@@ -77,9 +148,9 @@ const safeParseInt = (value, fallback) => {
               v-model="interactionMode"
               class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent appearance-none cursor-pointer"
             >
-              <option value="点赞&评论">点赞&评论</option>
-              <option value="仅点赞">仅点赞</option>
-              <option value="仅评论">仅评论</option>
+              <option value="like_and_comment">点赞&评论</option>
+              <option value="like_only">仅点赞</option>
+              <option value="comment_only">仅评论</option>
             </select>
             <i class="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
           </div>
@@ -94,7 +165,9 @@ const safeParseInt = (value, fallback) => {
               class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent appearance-none cursor-pointer"
             >
               <option value="">请选择智能体</option>
-              <option value="过敏">过敏</option>
+              <option v-for="agent in agents" :key="agent.id" :value="agent.id">
+                {{ agent.name }}
+              </option>
             </select>
             <i class="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
           </div>
@@ -109,13 +182,6 @@ const safeParseInt = (value, fallback) => {
             rows="4"
             class="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent resize-none"
           ></textarea>
-        </div>
-
-        <!-- 保存按钮 -->
-        <div class="flex justify-end pt-4">
-          <button class="px-6 py-2.5 bg-[#4A90E2] hover:bg-[#357ABD] text-white rounded-lg font-medium transition-colors">
-            保存设置
-          </button>
         </div>
       </div>
     </div>

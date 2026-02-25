@@ -6,7 +6,7 @@ import AgentManagement from '../components/config/AgentManagement.vue';
 import MomentsReview from '../components/config/MomentsReview.vue';
 import ScriptGroupConfig from '../components/config/ScriptGroupConfig.vue';
 import AiReplyConfig from '../components/config/AiReplyConfig.vue';
-import ExternalApiConfig from '../components/config/ExternalApiConfig.vue';
+// import ExternalApiConfig from '../components/config/ExternalApiConfig.vue';
 import AlertConfig from '../components/config/AlertConfig.vue';
 import RestTimeSetting from '../components/config/RestTimeSetting.vue';
 
@@ -18,7 +18,7 @@ const menuItems = [
   { id: 'moments-review', icon: 'ri-chat-smile-3-line', label: '朋友圈评论' },
   { id: 'tag-group', icon: 'ri-price-tag-3-line', label: '话术组配置' },
   { id: 'ai-reply', icon: 'ri-message-3-line', label: 'AI回复配置' },
-  { id: 'external-api', icon: 'ri-link', label: '外部API配置' },
+  // { id: 'external-api', icon: 'ri-link', label: '外部API配置' },
   { id: 'forecast', icon: 'ri-line-chart-line', label: '预警配置' },
   { id: 'rest-time', icon: 'ri-time-line', label: '休息时间设置' },
 ];
@@ -82,7 +82,7 @@ const getMenuItemClass = (id) => {
           <AiReplyConfig v-else-if="activeSection === 'ai-reply'" />
 
           <!-- 外部API配置 -->
-          <ExternalApiConfig v-else-if="activeSection === 'external-api'" />
+          <!-- <ExternalApiConfig v-else-if="activeSection === 'external-api'" /> -->
 
           <!-- 预警配置 -->
           <AlertConfig v-else-if="activeSection === 'forecast'" />

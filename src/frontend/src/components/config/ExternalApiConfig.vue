@@ -11,9 +11,6 @@ const apiDescription = ref('');
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold text-slate-800">外部API配置</h1>
-      <button class="px-4 py-2 bg-[#4A90E2] hover:bg-[#357ABD] text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap">
-        保存配置
-      </button>
     </div>
 
     <div class="bg-white rounded-lg shadow-sm p-6">

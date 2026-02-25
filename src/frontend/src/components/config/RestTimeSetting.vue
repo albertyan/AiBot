@@ -1,11 +1,74 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, watch } from 'vue';
+import { message } from 'ant-design-vue';
+import { getRestTimeSettings, saveRestTimeSettings } from '../../api/setting';
 
 const restStartTime = ref('00:00');
 const restEndTime = ref('05:30');
 const autoAddFriend = ref(true);
 const autoPassFriend = ref(true);
 const enableRestTime = ref(true);
+const loading = ref(false);
+const saving = ref(false);
+const sliderRef = ref(null);
+const dragging = ref(null);
+const isInitializing = ref(true);
+
+const timeToMinutes = (time) => {
+  if (!time) return 0;
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+};
+
+const minutesToTime = (minutes) => {
+  let h = Math.floor(minutes / 60);
+  let m = minutes % 60;
+  // 30分钟对齐
+  if (m < 15) m = 0;
+  else if (m < 45) m = 30;
+  else {
+    m = 0;
+    h = (h + 1) % 24;
+  }
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+};
+
+const getPercent = (time) => {
+  return (timeToMinutes(time) / 1440) * 100;
+};
+
+const handleMouseDown = (type, e) => {
+  if (!enableRestTime.value) return;
+  dragging.value = type;
+  document.addEventListener('mousemove', handleMouseMove);
+  document.addEventListener('mouseup', handleMouseUp);
+};
+
+const handleMouseMove = (e) => {
+  if (!dragging.value || !sliderRef.value) return;
+  
+  const rect = sliderRef.value.getBoundingClientRect();
+  let percent = (e.clientX - rect.left) / rect.width;
+  percent = Math.max(0, Math.min(1, percent));
+  
+  // 总分钟数 1440 (24 * 60)
+  // 为了让 24:00 (即 00:00) 也能选到，我们可以映射到 0-1440
+  // 但是我们的 minutesToTime 逻辑是 % 24，所以 1440 会变成 00:00
+  const minutes = Math.round(percent * 1440);
+  const time = minutesToTime(minutes);
+  
+  if (dragging.value === 'start') {
+    restStartTime.value = time;
+  } else {
+    restEndTime.value = time;
+  }
+};
+
+const handleMouseUp = () => {
+  dragging.value = null;
+  document.removeEventListener('mousemove', handleMouseMove);
+  document.removeEventListener('mouseup', handleMouseUp);
+};
 
 const generateTimeOptions = () => {
   const options = [];
@@ -18,15 +81,99 @@ const generateTimeOptions = () => {
   }
   return options;
 };
+
+const fetchSettings = async () => {
+  loading.value = true;
+  try {
+    const res = await getRestTimeSettings();
+    if (res.code === 200 && res.data && res.data.rest_time_settings) {
+      const settings = res.data.rest_time_settings;
+      
+      // 处理开始时间
+      if (typeof settings.startTime === 'number') {
+        restStartTime.value = `${settings.startTime.toString().padStart(2, '0')}:00`;
+      } else {
+        restStartTime.value = settings.startTime || '00:00';
+      }
+      
+      // 处理结束时间
+      if (typeof settings.endTime === 'number') {
+        restEndTime.value = `${settings.endTime.toString().padStart(2, '0')}:00`;
+      } else {
+        restEndTime.value = settings.endTime || '00:00';
+      }
+
+      // 处理选中任务
+      if (Array.isArray(settings.selectedTasks)) {
+        autoAddFriend.value = settings.selectedTasks.includes('自动加好友');
+        autoPassFriend.value = settings.selectedTasks.includes('自动通过好友');
+      } else {
+        autoAddFriend.value = false;
+        autoPassFriend.value = false;
+      }
+
+      // 处理启用状态 (如果没有 enabled 字段，默认启用)
+      enableRestTime.value = settings.enabled !== undefined ? settings.enabled : true;
+    }
+  } catch (error) {
+    console.error('获取休息时间配置失败:', error);
+    message.error('获取休息时间配置失败');
+  } finally {
+    loading.value = false;
+    setTimeout(() => {
+      isInitializing.value = false;
+    }, 100);
+  }
+};
+
+const saveSettings = async () => {
+  if (isInitializing.value) return;
+
+  saving.value = true;
+  try {
+    const selectedTasks = [];
+    if (autoAddFriend.value) selectedTasks.push('自动加好友');
+    if (autoPassFriend.value) selectedTasks.push('自动通过好友');
+
+    const config = {
+      rest_time_settings: {
+        startTime: restStartTime.value,
+        endTime: restEndTime.value,
+        selectedTasks: selectedTasks,
+        enabled: enableRestTime.value
+      }
+    };
+
+    const res = await saveRestTimeSettings(config);
+    if (res.code === 200) {
+      message.success('配置已保存');
+    } else {
+      message.error(res.msg || '保存配置失败');
+    }
+  } catch (error) {
+    console.error('保存休息时间配置失败:', error);
+    message.error('保存配置失败');
+  } finally {
+    saving.value = false;
+  }
+};
+
+watch(
+  [restStartTime, restEndTime, autoAddFriend, autoPassFriend, enableRestTime],
+  () => {
+    saveSettings();
+  }
+);
+
+onMounted(() => {
+  fetchSettings();
+});
 </script>
 
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold text-slate-800">休息时间设置</h1>
-      <button class="px-4 py-2 bg-[#4A90E2] hover:bg-[#357ABD] text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap">
-        保存设置
-      </button>
     </div>
 
     <div class="bg-white rounded-lg shadow-sm p-6">
@@ -66,11 +213,61 @@ const generateTimeOptions = () => {
         </div>
         
         <!-- 时间轴可视化 -->
-        <div class="relative h-2 bg-slate-200 rounded-full overflow-hidden">
-          <div 
-            class="absolute h-full bg-[#4A90E2] rounded-full"
-            style="left: 0%; width: 22.9%"
-          ></div>
+        <div 
+          ref="sliderRef"
+          class="relative h-4 bg-slate-200 rounded-full cursor-pointer select-none mt-6 mb-4"
+          :class="{ 'opacity-50 cursor-not-allowed': !enableRestTime }"
+        >
+          <!-- 选中区域 -->
+          <template v-if="timeToMinutes(restStartTime) <= timeToMinutes(restEndTime)">
+            <div 
+              class="absolute h-full bg-[#4A90E2] rounded-full opacity-60"
+              :style="{ 
+                left: `${getPercent(restStartTime)}%`, 
+                width: `${getPercent(restEndTime) - getPercent(restStartTime)}%` 
+              }"
+            ></div>
+          </template>
+          <template v-else>
+            <!-- 跨天情况：前半段 -->
+            <div 
+              class="absolute h-full bg-[#4A90E2] rounded-l-full opacity-60"
+              :style="{ 
+                left: '0%', 
+                width: `${getPercent(restEndTime)}%` 
+              }"
+            ></div>
+            <!-- 跨天情况：后半段 -->
+            <div 
+              class="absolute h-full bg-[#4A90E2] rounded-r-full opacity-60"
+              :style="{ 
+                left: `${getPercent(restStartTime)}%`, 
+                width: `${100 - getPercent(restStartTime)}%` 
+              }"
+            ></div>
+          </template>
+
+          <!-- 开始时间手柄 -->
+          <div
+            class="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-[#4A90E2] rounded-full shadow cursor-grab hover:scale-110 transition-transform z-10"
+            :style="{ left: `calc(${getPercent(restStartTime)}% - 8px)` }"
+            @mousedown.stop.prevent="handleMouseDown('start', $event)"
+          >
+            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              {{ restStartTime }}
+            </div>
+          </div>
+
+          <!-- 结束时间手柄 -->
+          <div
+            class="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-red-400 rounded-full shadow cursor-grab hover:scale-110 transition-transform z-10"
+            :style="{ left: `calc(${getPercent(restEndTime)}% - 8px)` }"
+            @mousedown.stop.prevent="handleMouseDown('end', $event)"
+          >
+             <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              {{ restEndTime }}
+            </div>
+          </div>
         </div>
         <div class="flex justify-between text-xs text-slate-500 mt-2">
           <span>00:00</span>
@@ -153,7 +350,7 @@ const generateTimeOptions = () => {
                 已应用
               </span>
             </label>
-
+<!-- 
             <label class="flex items-center justify-between p-4 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
               <div class="flex items-center space-x-3">
                 <input
@@ -166,8 +363,8 @@ const generateTimeOptions = () => {
                   <div class="text-xs text-slate-500">休息时间内暂停朋友圈自动评论</div>
                 </div>
               </div>
-            </label>
-
+            </label> -->
+<!-- 
             <label class="flex items-center justify-between p-4 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
               <div class="flex items-center space-x-3">
                 <input
@@ -180,7 +377,7 @@ const generateTimeOptions = () => {
                   <div class="text-xs text-slate-500">休息时间内暂停AI自动回复消息</div>
                 </div>
               </div>
-            </label>
+            </label> -->
           </div>
 
           <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">

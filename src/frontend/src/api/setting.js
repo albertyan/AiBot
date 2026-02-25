@@ -111,3 +111,110 @@ export const setDefaultAgent = async (id) => {
     throw new Error('设置默认智能体失败');
   }
 };
+
+export const getMomentSettings = async () => {
+  const response = await fetch('/api/setting/moment_settings');
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('获取朋友圈配置失败');
+  }
+};
+
+export const saveMomentSettings = async (settings) => {
+  const response = await fetch('/api/setting/moment_settings', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(settings)
+  });
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('保存朋友圈配置失败');
+  }
+};
+
+export const getChatHistorySettings = async () => {
+  const response = await fetch('/api/setting/chat_history_settings');
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('获取 AI 回复配置失败');
+  }
+};
+
+export const saveChatHistorySettings = async (settings) => {
+  const response = await fetch('/api/setting/chat_history_settings', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(settings)
+  });
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('保存 AI 回复配置失败');
+  }
+};
+
+export const sendTestAlertEmail = async (email) => {
+  const response = await fetch(`/api/setting/test_alert_email?email=${encodeURIComponent(email)}`, {
+    method: 'POST'
+  });
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('发送测试邮件失败');
+  }
+};
+
+export const getAlertSettings = async () => {
+  const response = await fetch('/api/setting/alert_settings');
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('获取预警配置失败');
+  }
+};
+
+export const saveAlertSettings = async (settings) => {
+  const response = await fetch('/api/setting/alert_settings', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(settings)
+  });
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('保存预警配置失败');
+  }
+};
+
+export const getRestTimeSettings = async () => {
+  const response = await fetch('/api/setting/rest_time_settings');
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('获取休息时间配置失败');
+  }
+};
+
+export const saveRestTimeSettings = async (settings) => {
+  const response = await fetch('/api/setting/rest_time_settings', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(settings)
+  });
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('保存休息时间配置失败');
+  }
+};

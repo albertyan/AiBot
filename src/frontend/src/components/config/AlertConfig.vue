@@ -1,18 +1,118 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, watch } from 'vue';
+import { message } from 'ant-design-vue';
+import { sendTestAlertEmail, getAlertSettings, saveAlertSettings } from '../../api/setting';
 
 const alertEmail = ref('');
 const enableEmailAlert = ref(true);
-const alertFrequency = ref('立即通知');
+const alertFrequency = ref('immediate');
+const sending = ref(false);
+const saving = ref(false);
+const loading = ref(false);
+const isInitializing = ref(true);
+
+const fetchSettings = async () => {
+  loading.value = true;
+  try {
+    const res = await getAlertSettings();
+    if (res.code === 200 && res.data && res.data.alert_settings) {
+      const settings = res.data.alert_settings;
+      alertEmail.value = settings.email || '';
+      alertFrequency.value = settings.frequency || 'immediate';
+      // 如果后端没有返回 enabled 字段，默认为 true
+      enableEmailAlert.value = settings.enabled !== undefined ? settings.enabled : true;
+    }
+  } catch (error) {
+    console.error('获取预警配置失败:', error);
+    message.error('获取预警配置失败');
+  } finally {
+    loading.value = false;
+    setTimeout(() => {
+      isInitializing.value = false;
+    }, 100);
+  }
+};
+
+const saveSettings = async () => {
+  if (isInitializing.value) return;
+
+  if (enableEmailAlert.value && !alertEmail.value) {
+    // 自动保存时，如果为空可能不提示更友好，或者仅在启用且为空时提示
+    // message.warning('启用预警时，邮箱不能为空');
+    return;
+  }
+
+  if (enableEmailAlert.value) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(alertEmail.value)) {
+      // message.warning('请输入有效的邮箱地址');
+      return;
+    }
+  }
+
+  saving.value = true;
+  try {
+    const config = {
+      alert_settings: {
+        email: alertEmail.value,
+        frequency: alertFrequency.value,
+        enabled: enableEmailAlert.value
+      }
+    };
+    const res = await saveAlertSettings(config);
+    if (res.code === 200) {
+      message.success('配置已保存');
+    } else {
+      message.error(res.msg || '保存配置失败');
+    }
+  } catch (error) {
+    console.error('保存预警配置失败:', error);
+    message.error('保存配置失败');
+  } finally {
+    saving.value = false;
+  }
+};
+
+watch(
+  [alertEmail, enableEmailAlert, alertFrequency],
+  () => {
+    saveSettings();
+  }
+);
+
+onMounted(() => {
+  fetchSettings();
+});
+
+const handleSendTestEmail = async () => {
+  if (!alertEmail.value) {
+    message.warning('请先输入预警邮箱');
+    return;
+  }
+  
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(alertEmail.value)) {
+    message.warning('请输入有效的邮箱地址');
+    return;
+  }
+
+  sending.value = true;
+  try {
+    await sendTestAlertEmail(alertEmail.value);
+    message.success('测试邮件发送成功');
+  } catch (error) {
+    console.error(error);
+    message.error(error.message || '发送测试邮件失败');
+  } finally {
+    sending.value = false;
+  }
+};
 </script>
 
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold text-slate-800">预警配置</h1>
-      <button class="px-4 py-2 bg-[#4A90E2] hover:bg-[#357ABD] text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap">
-        保存设置
-      </button>
     </div>
 
     <div class="bg-white rounded-lg shadow-sm p-6">
@@ -59,7 +159,7 @@ const alertFrequency = ref('立即通知');
         </div>
 
         <!-- 预警频率 -->
-        <div>
+        <!-- <div>
           <label class="block text-sm font-medium text-slate-700 mb-3">预警频率</label>
           <div class="relative">
             <select
@@ -67,19 +167,19 @@ const alertFrequency = ref('立即通知');
               class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent appearance-none cursor-pointer"
               :disabled="!enableEmailAlert"
             >
-              <option value="立即通知">立即通知</option>
-              <option value="每5分钟">每5分钟</option>
-              <option value="每15分钟">每15分钟</option>
-              <option value="每30分钟">每30分钟</option>
-              <option value="每小时">每小时</option>
+              <option value="immediate">立即通知</option>
+              <option value="5min">每5分钟</option>
+              <option value="15min">每15分钟</option>
+              <option value="30min">每30分钟</option>
+              <option value="1hour">每小时</option>
             </select>
             <i class="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
           </div>
           <p class="text-xs text-slate-500 mt-2">设置预警通知的发送频率</p>
-        </div>
+        </div> -->
 
         <!-- 预警条件 -->
-        <div class="pt-4 border-t border-slate-200">
+        <!-- <div class="pt-4 border-t border-slate-200">
           <h3 class="text-base font-semibold text-slate-800 mb-4">预警条件</h3>
           <div class="space-y-3">
             <label class="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
@@ -118,15 +218,16 @@ const alertFrequency = ref('立即通知');
               </div>
             </label>
           </div>
-        </div>
+        </div> -->
 
         <!-- 测试预警 -->
         <div class="flex items-center space-x-3 pt-4">
           <button 
+            @click="handleSendTestEmail"
             class="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors whitespace-nowrap"
-            :disabled="!enableEmailAlert"
+            :disabled="!enableEmailAlert || sending"
           >
-            发送测试邮件
+            {{ sending ? '发送中...' : '发送测试邮件' }}
           </button>
           <span class="text-sm text-slate-500">测试预警邮件是否能正常发送</span>
         </div>

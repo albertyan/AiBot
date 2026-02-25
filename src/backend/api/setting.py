@@ -1,6 +1,8 @@
+from email.mime.text import MIMEText
 import json
 import math
 import os
+import smtplib
 from typing import Any
 from fastapi import APIRouter
 import time
@@ -343,6 +345,243 @@ def save_greeting_config(current_user: CurrentUserDep, config: dict) -> Any:
     # 直接写入文件即可保持与 get_greeting_config 读取逻辑一致
     
     with open(os.path.join(get_base_dir(), "greeting_config.json"), "w", encoding='utf-8') as f:
+        json.dump(config, f, indent=4, ensure_ascii=False)
+        
+    return ResponseUtil.success()
+
+# 朋友圈评论#####################################################################################
+@setting_router.get("/moment_settings")
+def get_friend_comment_config(current_user: CurrentUserDep) -> Any:
+    '''
+    获取朋友圈评论配置
+    '''
+    file_path = os.path.join(get_base_dir(), "moment_settings.json")
+    if not os.path.exists(file_path):
+        # 返回默认配置
+        default_settings = {
+            "moment_settings": {
+                "commentLimit": 10,
+                "perFriendLimit": 2,
+                "autoLike": False,
+                "interactionMode": "like_and_comment",
+                "blacklist": "",
+                "prompt": "请根据朋友圈的内容，生成一条友善、积极的评论。评论要自然、真诚，避免过于敷衍。如果朋友圈内容是图片，要根据图片内容来评论。",
+                "agentId": ""
+            }
+        }
+        return ResponseUtil.success(data=default_settings)
+    
+    try:
+        with open(file_path, "r", encoding='utf-8') as f:
+            data = json.load(f)
+        return ResponseUtil.success(data=data)
+    except Exception as e:
+        logger.error(f"Error loading moment settings: {e}")
+        return ResponseUtil.error(msg="配置文件格式错误")
+
+@setting_router.post("/moment_settings")
+def save_friend_comment_config(current_user: CurrentUserDep, config: dict) -> Any:
+    '''
+    保存朋友圈评论配置
+    moment_settings.json文件示例:
+    {
+        "moment_settings": {
+            "agentId": "7532677049182355496",
+            "commentLimit": 10,
+            "perFriendLimit": 2,
+            "autoLike": false,
+            "interactionMode": "like_and_comment",
+            "blacklist": "",
+            "prompt": "请根据朋友圈的内容，生成一条友善、积极的评论。评论要自然、真诚，避免过于敷衍。如果朋友圈内容是图片，要根据图片内容来评论。"
+        }
+    }
+    '''
+    
+    with open(os.path.join(get_base_dir(), "moment_settings.json"), "w", encoding='utf-8') as f:
+        json.dump(config, f, indent=4, ensure_ascii=False)
+        
+    return ResponseUtil.success()
+
+# AI回复配置#####################################################################################
+@setting_router.get("/chat_history_settings")
+def get_ai_reply_config(current_user: CurrentUserDep) -> Any:
+    '''
+    获取AI回复配置
+    '''
+    file_path = os.path.join(get_base_dir(), "chat_history_settings.json")
+    if not os.path.exists(file_path):
+        # 返回默认配置
+        default_settings = {
+            "chat_history_settings": {
+                "autoSave": False,
+                "includeContext": True,
+                "contextCount": 7,
+                "includeUserInfo": False,
+                "messageMerge": {
+                    "mode": "concat",
+                    "interval": 5
+                },
+                "transferConfig": {
+                    "phrases": [],
+                    "notifyWechat": ""
+                }
+            }
+        }
+        return ResponseUtil.success(data=default_settings)
+    try:
+        with open(file_path, "r", encoding='utf-8') as f:
+            data = json.load(f)
+        return ResponseUtil.success(data=data)
+    except Exception as e:
+        logger.error(f"Error loading chat history settings: {e}")
+        return ResponseUtil.error(msg="配置文件格式错误")
+
+@setting_router.post("/chat_history_settings")
+def save_ai_reply_config(current_user: CurrentUserDep, config: dict) -> Any:
+    '''
+    保存AI回复配置
+    chat_history_settings.json 配置文件示例:
+    {
+    "chat_history_settings": {
+        "autoSave": false,
+        "includeContext": true,
+        "contextCount": 7,
+        "includeUserInfo": false,
+        "messageMerge": {
+            "mode": "concat",
+            "interval": 5
+        },
+        "transferConfig": {
+            "phrases": [
+                "gg",
+                "xx"
+            ],
+            "notifyWechat": "albertyan"
+            }
+        }
+    }
+    '''
+    # 直接写入文件即可保持与 get_ai_reply_config 读取逻辑一致
+    with open(os.path.join(get_base_dir(), "chat_history_settings.json"), "w", encoding='utf-8') as f:
+        json.dump(config, f, indent=4, ensure_ascii=False)
+        
+    return ResponseUtil.success()
+# 预警配置#####################################################################################
+@setting_router.get("/alert_settings")
+def get_alert_config(current_user: CurrentUserDep) -> Any:
+    '''
+    获取预警配置
+    '''
+    file_path = os.path.join(get_base_dir(), "alert_settings.json")
+    if not os.path.exists(file_path):
+        # 返回默认配置
+        default_settings = {
+            "alert_settings": {
+                "email": "albertyan@outlook.com",
+                "frequency": "daily"
+            }
+        }
+        return ResponseUtil.success(data=default_settings)
+    try:
+        with open(file_path, "r", encoding='utf-8') as f:
+            data = json.load(f)
+        return ResponseUtil.success(data=data)
+    except Exception as e:
+        logger.error(f"Error loading alert settings: {e}")
+        return ResponseUtil.error(msg="配置文件格式错误")
+    
+@setting_router.post("/alert_settings")
+def save_alert_config(current_user: CurrentUserDep, config: dict) -> Any:
+    '''
+    保存预警配置
+    alert_settings.json 配置文件示例:
+    {
+        "alert_settings": {
+            "email": "albertyan@qq.com"
+        }
+    }
+    '''
+    # 直接写入文件即可保持与 get_alert_config 读取逻辑一致
+    with open(os.path.join(get_base_dir(), "alert_settings.json"), "w", encoding='utf-8') as f:
+        json.dump(config, f, indent=4, ensure_ascii=False)
+        
+    return ResponseUtil.success()
+
+@setting_router.post("/test_alert_email")
+def send_test_alert_email(email: str) -> Any: 
+    '''
+    发送测试预警邮件
+    '''
+    msg = MIMEText('这是一封测试预警邮件', 'plain', 'utf-8')
+    msg['Subject'] = '测试预警邮件'
+    msg['From'] = '21145940@qq.com'
+    msg['To'] = email
+    
+    try:
+        with smtplib.SMTP_SSL('smtp.qq.com', 465) as server:
+            server.login('21145940@qq.com', 'alwjookafvbrcabh')
+            server.sendmail('21145940@qq.com', email, msg.as_string())
+        return ResponseUtil.success(msg="发送邮件成功")
+    except Exception as e:
+        logger.error(f"Error sending email: {e}")
+        return ResponseUtil.error(msg="发送邮件失败")
+    
+# 休息时间设置#####################################################################################
+@setting_router.get("/rest_time_settings")
+def get_rest_time_config(current_user: CurrentUserDep) -> Any:
+    '''
+    获取休息时间配置
+    {
+        "rest_time_settings": {
+            "startTime": 15,
+            "endTime": 62,
+            "selectedTasks": [
+            "自动通过好友",
+            "自动加好友"
+            ]
+        }
+    }
+    '''
+    file_path = os.path.join(get_base_dir(), "rest_time_settings.json")
+    if not os.path.exists(file_path):
+        # 返回默认配置
+        default_settings = {
+            "rest_time_settings": {
+                "startTime": 20,
+                "endTime": 8,
+                "selectedTasks": [
+                "自动通过好友",
+                "自动加好友"
+                ]
+            }
+        }
+        return ResponseUtil.success(data=default_settings)
+    try:
+        with open(file_path, "r", encoding='utf-8') as f:
+            data = json.load(f)
+        return ResponseUtil.success(data=data)
+    except Exception as e:
+        logger.error(f"Error loading rest time settings: {e}")
+        return ResponseUtil.error(msg="配置文件格式错误")
+    
+@setting_router.post("/rest_time_settings")
+def save_rest_time_config(current_user: CurrentUserDep, config: dict) -> Any:
+    '''
+    保存休息时间配置
+    rest_time_settings.json 配置文件示例:
+    {
+        "rest_time_settings": {
+            "startTime": 15,
+            "endTime": 62,
+            "selectedTasks": [
+            "自动通过好友",
+            "自动加好友"
+            ]
+        }
+    }
+    '''
+    # 直接写入文件即可保持与 get_rest_time_config 读取逻辑一致
+    with open(os.path.join(get_base_dir(), "rest_time_settings.json"), "w", encoding='utf-8') as f:
         json.dump(config, f, indent=4, ensure_ascii=False)
         
     return ResponseUtil.success()

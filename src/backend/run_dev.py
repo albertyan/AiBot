@@ -7,9 +7,9 @@ import webview
 from threading import Thread
 
 # 将项目根目录添加到 sys.path
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-BACKEND_DIR = os.path.join(PROJECT_ROOT, "src", "backend")
-sys.path.insert(0, BACKEND_DIR)
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(CURRENT_DIR))
+sys.path.insert(0, CURRENT_DIR)
 sys.path.insert(0, PROJECT_ROOT)
 import backend_init
 # 尝试导入 backend_init，如果失败则提示
@@ -22,15 +22,15 @@ def start_backend_process():
     env = os.environ.copy()
     python_path = env.get("PYTHONPATH", "")
     # 将项目根目录和 src/backend 加入 PYTHONPATH
-    env["PYTHONPATH"] = f"{PROJECT_ROOT}{os.pathsep}{BACKEND_DIR}{os.pathsep}{python_path}"
+    env["PYTHONPATH"] = f"{PROJECT_ROOT}{os.pathsep}{CURRENT_DIR}{os.pathsep}{python_path}"
     
-    # 启动命令：python -m uvicorn src.backend.app:app --reload --host 127.0.0.1 --port 8000
-    # 使用 8000 端口避免与前端默认 3000 冲突
+    # 启动命令：python -m uvicorn src.backend.app:app --reload --host 127.0.0.1 --port 8090
+    # 使用 8090 端口避免与默认端口冲突
     cmd = [
         sys.executable, "-m", "uvicorn", 
         "src.backend.app:app", 
         "--host", "127.0.0.1", 
-        "--port", "8000", 
+        "--port", "8090", 
         "--reload"
     ]
     
@@ -57,7 +57,7 @@ def main():
         # 3. 启动前端窗口
         # 指向后端端口 8000
         print("Starting WebView window...")
-        webview.create_window('AiBot (Dev Mode - Auto Reload)', 'http://localhost:8001', width=1024, height=768)
+        webview.create_window('AiBot (Dev Mode - Auto Reload)', 'http://localhost:8090', width=1024, height=768)
         webview.start(debug=True)
         
     except KeyboardInterrupt:

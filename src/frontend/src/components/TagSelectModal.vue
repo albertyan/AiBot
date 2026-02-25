@@ -82,7 +82,7 @@ const handleConfirm = () => {
         <div
           v-for="tag in tags"
           :key="tag.tag"
-          class="flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors select-none"
+          class="flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors select-none h-12"
           @click="toggleTag(tag.tag)"
           :class="{'border-[#5B6EE1] bg-blue-50/30': localSelectedTags.includes(tag.tag)}"
         >

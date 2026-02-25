@@ -18,6 +18,7 @@ module.exports = {
     // Vue 3 supports multiple v-models and v-model arguments
     'vue/no-v-model-argument': 'off',
     'vue/multi-word-component-names': 'off',
-    'no-unused-vars': 'warn'
+    'no-unused-vars': 'off',
+    'vue/no-v-model-argument': 'off'
   }
 }

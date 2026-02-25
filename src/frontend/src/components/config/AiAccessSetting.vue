@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { message } from 'ant-design-vue';
 import { getDifySettings, saveDifySettings, getCozeSettings, setCozeSettings } from '../../api/setting';
 import { isValidUrl } from '../../utils/validators';
@@ -9,6 +9,7 @@ const difyUrl = ref('');
 const cozeTokenDays = ref(0);
 const loading = ref(false);
 const showCozeToken = ref(false);
+const isInitializing = ref(true);
 
 const loadSettings = async () => {
   try {
@@ -28,12 +29,18 @@ const loadSettings = async () => {
   } catch (error) {
     console.error('Failed to load settings:', error);
     message.error('获取配置失败');
+  } finally {
+    setTimeout(() => {
+      isInitializing.value = false;
+    }, 300);
   }
 };
 
-const handleSaveCoze = async () => {
+const saveCoze = async () => {
+  if (isInitializing.value) return;
+
   if (!cozeToken.value.trim()) {
-    message.warning('请输入 Coze Token');
+    // message.warning('请输入 Coze Token');
     return;
   }
   
@@ -41,7 +48,7 @@ const handleSaveCoze = async () => {
   try {
     const res = await setCozeSettings(cozeToken.value);
     if (res.code === 200) {
-      message.success('Coze 配置保存成功');
+      message.success('Coze 配置已保存');
       // 重新加载以更新天数
       const cozeRes = await getCozeSettings();
       if (cozeRes.code === 200 && cozeRes.data) {
@@ -57,15 +64,17 @@ const handleSaveCoze = async () => {
   }
 };
 
-const handleSaveDify = async () => {
+const saveDify = async () => {
+  if (isInitializing.value) return;
+
   if (!difyUrl.value.trim()) {
-    message.warning('请输入 Dify 服务器地址');
+    // message.warning('请输入 Dify 服务器地址');
     return;
   }
   
   // URL 校验：确保以 http:// 或 https:// 开头
   if (!isValidUrl(difyUrl.value)) {
-    message.warning('请输入有效的服务器地址 (需以 http:// 或 https:// 开头)');
+    // message.warning('请输入有效的服务器地址 (需以 http:// 或 https:// 开头)');
     return;
   }
   
@@ -73,7 +82,7 @@ const handleSaveDify = async () => {
   try {
     const res = await saveDifySettings(difyUrl.value);
     if (res.code === 200) {
-      message.success('Dify 配置保存成功');
+      message.success('Dify 配置已保存');
     } else {
       message.error(res.msg || '保存失败');
     }
@@ -83,6 +92,14 @@ const handleSaveDify = async () => {
     loading.value = false;
   }
 };
+
+watch(cozeToken, () => {
+  saveCoze();
+});
+
+watch(difyUrl, () => {
+  saveDify();
+});
 
 onMounted(() => {
   loadSettings();
@@ -102,13 +119,6 @@ onMounted(() => {
           </div>
           <h2 class="text-lg font-semibold text-slate-800">Coze平台</h2>
         </div>
-        <button 
-          @click="handleSaveCoze"
-          :disabled="loading"
-          class="px-4 py-2 bg-[#4A90E2] hover:bg-[#357ABD] text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-        >
-          {{ loading ? '保存中...' : '保存配置' }}
-        </button>
       </div>
 
       <div class="space-y-4">
@@ -142,13 +152,6 @@ onMounted(() => {
           </div>
           <h2 class="text-lg font-semibold text-slate-800">Dify平台</h2>
         </div>
-        <button 
-          @click="handleSaveDify"
-          :disabled="loading"
-          class="px-4 py-2 bg-[#4A90E2] hover:bg-[#357ABD] text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-        >
-          {{ loading ? '保存中...' : '保存配置' }}
-        </button>
       </div>
 
       <div>

@@ -1,6 +1,7 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { message } from 'ant-design-vue';
+import { getAgents } from '../../api/setting';
 import TagSelectModal from '../TagSelectModal.vue';
 
 // 朋友圈运营配置状态
@@ -9,15 +10,31 @@ const selectedTags = ref([]);
 const totalPosts = ref(10);
 const postsPerGroup = ref(3);
 const intervalMinutes = ref(30);
-const stopCondition = ref('终止本次任务');
-const interactionMode = ref('点赞&评论');
-const intelligentBody = ref('过敏');
+const stopCondition = ref('stop_task');
+const interactionMode = ref('like_and_comment');
+const intelligentBody = ref('');
 const multiWechatLoop = ref(false);
+const agents = ref([]);
 
 const safeParseInt = (value, fallback) => {
   const parsed = parseInt(value);
   return isNaN(parsed) ? fallback : Math.max(1, parsed);
 };
+
+onMounted(async () => {
+  try {
+    const res = await getAgents();
+    if (res.code === 200 && res.data && res.data.agents) {
+      agents.value = res.data.agents;
+      if (agents.value.length > 0) {
+        intelligentBody.value = agents.value[0].id;
+      }
+    }
+  } catch (error) {
+    console.error('获取智能体列表失败:', error);
+    message.error('获取智能体列表失败');
+  }
+});
 
 const handleStartMomentsTask = () => {
   if (totalPosts.value < 1 || postsPerGroup.value < 1 || intervalMinutes.value < 1) {
@@ -132,9 +149,8 @@ const handleTagConfirm = (tags) => {
                 v-model="stopCondition"
                 class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent appearance-none cursor-pointer"
               >
-                <option value="终止本次任务">终止本次任务</option>
-                <option value="继续执行">继续执行</option>
-                <option value="暂停等待">暂停等待</option>
+                <option value="stop_task">终止本次任务</option>
+                <option value="skip_continue">跳过并继续</option>
               </select>
               <i class="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
             </div>
@@ -148,24 +164,28 @@ const handleTagConfirm = (tags) => {
                 v-model="interactionMode"
                 class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent appearance-none cursor-pointer"
               >
-                <option value="点赞&评论">点赞&评论</option>
-                <option value="仅点赞">仅点赞</option>
-                <option value="仅评论">仅评论</option>
+                <option value="like_and_comment">点赞&评论</option>
+                <option value="like_only">仅点赞</option>
+                <option value="comment_only">仅评论</option>
               </select>
               <i class="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
             </div>
           </div>
 
           <!-- 标签 -->
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-3">标签(非必须)</label>
-            <button
-              class="w-full px-4 py-2.5 bg-[#5B6EE1] hover:bg-[#4A5DD0] text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2"
-              @click="showTagModal = true"
-            >
-              <span>{{ selectedTags.length > 0 ? `已选择 ${selectedTags.length} 个标签` : '选择标签' }}</span>
-              <i v-if="selectedTags.length > 0" class="ri-check-line"></i>
-            </button>
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-medium text-slate-700">标签(非必须)</label>
+            <div class="flex flex-col items-end space-y-2">
+              <button
+                class="px-6 py-2 bg-gradient-to-r from-[#5B6EE1] to-[#8B5CF6] hover:from-[#4A5DD0] hover:to-[#7C3AED] text-white rounded-lg text-sm font-medium transition-all shadow-sm"
+                @click="showTagModal = true"
+              >
+                选择标签
+              </button>
+              <div v-if="selectedTags.length > 0" class="px-4 py-1.5 bg-purple-50 border border-purple-100 rounded-lg text-sm text-purple-700">
+                已选: {{ selectedTags.join(', ') }}
+              </div>
+            </div>
           </div>
 
           <!-- 选择智能体 -->
@@ -176,9 +196,8 @@ const handleTagConfirm = (tags) => {
                 v-model="intelligentBody"
                 class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent appearance-none cursor-pointer"
               >
-                <option value="过敏">过敏</option>
-                <option value="智能体1">智能体1</option>
-                <option value="智能体2">智能体2</option>
+                <option value="" disabled>请选择智能体</option>
+                <option v-for="agent in agents" :key="agent.id" :value="agent.id">{{ agent.name }}</option>
               </select>
               <i class="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
             </div>

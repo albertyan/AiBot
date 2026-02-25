@@ -181,7 +181,7 @@ const handleCreateTask = () => {
               </label>
             </div>
             <select class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent">
-              <option>选择话术组</option>
+              <option value="">选择话术组</option>
             </select>
           </div>
 
