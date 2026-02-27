@@ -1,4 +1,5 @@
 import datetime
+import os
 
 from sqlalchemy import Column, Integer, DateTime, String, text
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -19,8 +20,15 @@ if DataBaseConfig.db_type == 'postgresql':
     )
 
 if DataBaseConfig.db_type == 'sqlite3':
+    CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(CURRENT_DIR)))
+    DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
+    if not os.path.exists(DATA_DIR):
+        os.makedirs(DATA_DIR, exist_ok=True)
+    
+    db_path = os.path.join(DATA_DIR, f'{DataBaseConfig.db_database}.db')
     ASYNC_SQLALCHEMY_DATABASE_URL = (
-        f'sqlite+aiosqlite:///{DataBaseConfig.db_database}.db'
+        f'sqlite+aiosqlite:///{db_path}'
     )
 
 engine_args = {

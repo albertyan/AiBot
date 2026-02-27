@@ -33,10 +33,10 @@ export const useSystemStore = defineStore('system', () => {
 
   const startHeartbeat = () => {
     // Check immediately
-    checkHeartbeat();
-    // Then every 5 seconds
-    if (timer.value) clearInterval(timer.value);
-    timer.value = setInterval(checkHeartbeat, 10000);
+    // checkHeartbeat();
+    // // Then every 5 seconds
+    // if (timer.value) clearInterval(timer.value);
+    // timer.value = setInterval(checkHeartbeat, 10000);
   };
 
   const stopHeartbeat = () => {

@@ -4,7 +4,7 @@ import { message } from 'ant-design-vue';
 import NavBar from '../components/NavBar.vue';
 import SyncSettingsModal from '../components/SyncSettingsModal.vue';
 import SetGroupTagsModal from '../components/SetGroupTagsModal.vue';
-import { getFriends, getGroups, getFriendTags, getGroupTags } from '../api/custom';
+import { getFriends, getGroups, getFriendTags, getGroupTags, getCurrentUser } from '../api/custom';
 
 const activeTab = ref('friends');
 const selectedFriendIds = ref([]);
@@ -13,6 +13,7 @@ const searchQuery = ref('');
 const filterDropdownOpen = ref(false);
 const currentFilter = ref('全部');
 const isLoading = ref(false);
+const currentUser = ref(null);
 
 // Settings Modal State
 const isSettingsModalVisible = ref(false);
@@ -33,18 +34,36 @@ const getColor = (name) => {
   return colors[Math.abs(hash) % colors.length];
 };
 
-const fetchData = async () => {
+onMounted(async () => {
+  try {
+    const userRes = await getCurrentUser();
+    if (userRes.code === 200 && userRes.data) {
+      currentUser.value = userRes.data;
+      if (currentUser.value.wxNumber) {
+        await fetchData(currentUser.value.wxNumber);
+      } else {
+        message.warning('当前用户未绑定微信号，请先进行同步设置');
+      }
+    } else {
+      message.error('获取当前用户信息失败');
+    }
+  } catch (error) {
+    message.error('获取当前用户信息发生错误');
+  }
+});
+
+const fetchData = async (wxNumber) => {
   isLoading.value = true;
   try {
     const [friendsRes, groupsRes, friendTagsRes, groupTagsRes] = await Promise.all([
-      getFriends(),
-      getGroups(),
-      getFriendTags(),
-      getGroupTags()
+      getFriends(wxNumber),
+      getGroups(wxNumber),
+      getFriendTags(wxNumber),
+      getGroupTags(wxNumber)
     ]);
 
     if (friendsRes.code === 200) {
-      friends.value = friendsRes.data.map(f => {
+      friends.value = (friendsRes.data || []).map(f => {
         const name = f.name;
         return {
           id: f.id,
@@ -58,7 +77,7 @@ const fetchData = async () => {
     }
 
     if (groupsRes.code === 200) {
-      groups.value = groupsRes.data.map(g => {
+      groups.value = (groupsRes.data || []).map(g => {
         const name = g.name;
         return {
           id: g.id,
@@ -75,7 +94,7 @@ const fetchData = async () => {
     if (friendTagsRes.code === 200) {
       friendTags.value = [
         { name: '全部', count: null },
-        ...friendTagsRes.data.map(t => ({
+        ...(friendTagsRes.data || []).map(t => ({
           name: t.tag,
           count: t.contact_count
         }))
@@ -96,7 +115,7 @@ const fetchData = async () => {
 
       groupTags.value = [
         { name: '全部', count: null },
-        ...groupTagsRes.data.map(t => ({
+        ...(groupTagsRes.data || []).map(t => ({
           name: t,
           count: tagCounts[t] || 0
         }))
@@ -110,10 +129,6 @@ const fetchData = async () => {
     isLoading.value = false;
   }
 };
-
-onMounted(() => {
-  fetchData();
-});
 
 // Current list based on active tab
 const currentList = computed(() => activeTab.value === 'friends' ? friends.value : groups.value);

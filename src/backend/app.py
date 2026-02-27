@@ -64,15 +64,15 @@ dist_dir = os.path.join(BASE_DIR, "dist", "gui")
 static_dir = os.path.join(dist_dir, "assets")
 
 from contextlib import asynccontextmanager
-from scheduler import start_scheduler, shutdown_scheduler
+from scheduler import scheduler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 启动定时任务调度器
-    start_scheduler()
-    yield
-    # 关闭定时任务调度器
-    shutdown_scheduler()
+    # 启动定时任务调度器 (APScheduler v4 context manager)
+    async with scheduler:
+        # Start the scheduler's internal processing loop in the background
+        await scheduler.start_in_background()
+        yield
 
 app = FastAPI(docs_url=None, lifespan=lifespan)
 

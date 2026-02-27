@@ -63,12 +63,37 @@ def main():
     except KeyboardInterrupt:
         print("\nStopping...")
     finally:
-        # 4. 清理子进程
+        # 4. 清理子进程 (使用 psutil 递归杀死进程树，确保 uvicorn 的 worker 进程也被终止)
         if backend_proc.poll() is None:
-            print("Terminating backend process...")
-            backend_proc.terminate()
-            backend_proc.wait()
-            print("Backend stopped.")
+            print("Terminating backend process tree...")
+            try:
+                import psutil
+                parent = psutil.Process(backend_proc.pid)
+                children = parent.children(recursive=True)
+                for child in children:
+                    print(f"Terminating child process {child.pid}...")
+                    child.terminate()
+                
+                print(f"Terminating parent process {backend_proc.pid}...")
+                backend_proc.terminate()
+                
+                # 等待所有进程退出
+                gone, alive = psutil.wait_procs(children + [parent], timeout=5)
+                for p in alive:
+                    print(f"Force killing process {p.pid}...")
+                    p.kill()
+                    
+                print("Backend stopped.")
+            except ImportError:
+                print("psutil not installed, falling back to simple terminate (may leave orphan processes)...")
+                backend_proc.terminate()
+                backend_proc.wait()
+            except Exception as e:
+                print(f"Error stopping backend: {e}")
+                # Fallback
+                if backend_proc.poll() is None:
+                    backend_proc.terminate()
+                    backend_proc.wait()
 
 if __name__ == "__main__":
     main()

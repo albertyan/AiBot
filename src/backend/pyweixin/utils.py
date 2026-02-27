@@ -4,8 +4,8 @@ import emoji
 import psutil
 import pyautogui
 from functools import wraps
-from pywinauto import WindowSpecification,Desktop,mouse
-from pywinauto.controls.uia_controls import ListViewWrapper,ListItemWrapper,EditWrapper #TypeHint要用到
+from pywinauto import WindowSpecification,Desktop
+from pywinauto.controls.uia_controls import ListItemWrapper #TypeHint要用到
 from .Config import GlobalConfig
 from .WeChatTools import Navigator,Tools
 from .WinSettings import SystemSettings
@@ -33,8 +33,8 @@ class Regex_Patterns():
         self.GroupMember_Num_pattern=re.compile(r'\((\d+)\)$')#通讯录设置界面中每个最近群聊ListItem后边的数字
         self.QtWindow_pattern=re.compile(r'Qt\d+QWindowIcon')#qt窗口通用classname
         self.Filename_pattern=re.compile(r'.*\.\w+\s')#用来匹配.docx,.ppt等文件名，只适合在微信聊天文件界面中使用
-        self.File_Pattern=re.compile(r'文件\n(.*)\n')#微信聊天窗口发送的聊天文件卡片上的内容(有两个换行符)
-        
+        self.File_pattern=re.compile(r'文件\n(.*)\n')#微信聊天窗口发送的聊天文件卡片上的内容(有两个换行符)
+        self.Article_Timestamp_pattern=re.compile(r'(\d{4}年\d{1,2}月\d{1,2}日|\d{1,2}月\d{1,2}日|昨天|星期\w|今天)')#公众号文章的时间戳
 
 def auto_reply_to_friend_decorator(duration:str,friend:str,search_pages:int=5,is_maximize:bool=False,close_weixin:bool=False):
     '''
@@ -125,7 +125,6 @@ def get_new_message_num(main_window:WindowSpecification=None,is_maximize:bool=No
         main_window.close()
     return int(new_message_num.group(0)) if new_message_num  else 0
 
-    
 
 def At_all(main_window:WindowSpecification):
     '''在群里@所有人'''
@@ -183,7 +182,6 @@ def At(main_window:WindowSpecification,at_members:list[str]):
             else:
                 edit_area.set_text('')
     
-
 def open_red_packet(dialog_window:WindowSpecification,red_packet:ListItemWrapper)->int:
     '''
     该函数用来点击领取好友发送的红包
@@ -198,8 +196,7 @@ def open_red_packet(dialog_window:WindowSpecification,red_packet:ListItemWrapper
     open_button.click_input()
     red_envelop_detail.close()
 
-
-def scan_for_new_messages(main_window:WindowSpecification=None,delay:float=0.2,is_maximize:bool=None,close_weixin:bool=None)->dict:
+def scan_for_new_messages(main_window:WindowSpecification=None,delay:float=0.3,is_maximize:bool=None,close_weixin:bool=None)->dict:
     '''
     该函数用来扫描检查一遍会话列表中的所有新消息,返回发送对象以及新消息数量(不包括免打扰)
     Args:
@@ -277,7 +274,7 @@ def language_detector()->(str|None):
     lang=None
     for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
         if proc.info['name'] and 'wechatappex' in proc.info['name'].lower():
-            cmdline = proc.info['cmdline']
+            cmdline=proc.info['cmdline']
             if not cmdline:
                 continue
     cmd_str=' '.join(cmdline).lower()

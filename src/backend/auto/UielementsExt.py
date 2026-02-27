@@ -1,4 +1,4 @@
-from pyweixin.Uielements import (Login_window,Main_window,SideBar,Independent_window,ListItems,
+from pyweixin.Uielements import (Login_window,Main_window, MenuItems,SideBar,Independent_window,ListItems,
 Buttons,Texts,Menus,TabItems,Lists,Edits,Windows,Panes)
 
 class Login_windowExt(Login_window):
@@ -53,6 +53,9 @@ class PanesExt(Panes):
     def __init__(self):
         super().__init__()
         
+class MenuItemsExt(MenuItems):
+    def __init__(self):
+        super().__init__()
 
 class PopUpProfileWindow():
     def __init__(self):

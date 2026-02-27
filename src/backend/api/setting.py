@@ -17,7 +17,7 @@ setting_router = APIRouter()
 
 # AI 接入配置#####################################################################################
 @setting_router.get("/coze_settings")
-def get_coze_settings(current_user: CurrentUserDep) -> Any:
+async def get_coze_settings(current_user: CurrentUserDep) -> Any:
     '''
     获取 Coze 的 token 以及最后更新时间
     tokenLastUpdated: 距离最后更新时间的天数
@@ -45,7 +45,7 @@ def get_coze_settings(current_user: CurrentUserDep) -> Any:
                          "last_update_time": days_since_last_update})
 
 @setting_router.post("/coze_settings")
-def set_coze_settings(current_user: CurrentUserDep, settings: dict) -> Any:
+async def set_coze_settings(current_user: CurrentUserDep, settings: dict) -> Any:
     '''
     设置 Coze 的 token
     coze_settings.json 示例
@@ -66,7 +66,7 @@ def set_coze_settings(current_user: CurrentUserDep, settings: dict) -> Any:
     return ResponseUtil.success(data=result)
 
 @setting_router.post("/dify_settings")
-def save_dify_settings(current_user: CurrentUserDep, baseUrl: str) -> Any:
+async def save_dify_settings(current_user: CurrentUserDep, baseUrl: str) -> Any:
     '''
     设置 Dify 的地址
     dify_settings.json 示例
@@ -82,7 +82,7 @@ def save_dify_settings(current_user: CurrentUserDep, baseUrl: str) -> Any:
     return ResponseUtil.success(data=result)
 
 @setting_router.get("/dify_settings")
-def get_dify_settings(current_user: CurrentUserDep) -> Any:
+async def get_dify_settings(current_user: CurrentUserDep) -> Any:
     '''
     获取 Dify 的地址
     '''
@@ -97,7 +97,7 @@ def get_dify_settings(current_user: CurrentUserDep) -> Any:
 
 # 智能体管理#####################################################################################
 @setting_router.post("/agents")
-def add_agent(current_user: CurrentUserDep, agent: dict) -> Any:
+async def add_agent(current_user: CurrentUserDep, agent: dict) -> Any:
     '''
     添加智能体
     '''
@@ -137,7 +137,7 @@ def add_agent(current_user: CurrentUserDep, agent: dict) -> Any:
     return ResponseUtil.success(data=agent)
 
 @setting_router.get("/agents")
-def get_all_agents(current_user: CurrentUserDep) -> Any:
+async def get_all_agents(current_user: CurrentUserDep) -> Any:
     '''
     获取所有智能体
     文件示例
@@ -168,7 +168,7 @@ def get_all_agents(current_user: CurrentUserDep) -> Any:
 
 
 @setting_router.post("/agents")
-def save_agent(current_user: CurrentUserDep, agent: dict) -> Any:
+async def save_agent(current_user: CurrentUserDep, agent: dict) -> Any:
     '''
     保存智能体
     '''
@@ -191,7 +191,7 @@ def save_agent(current_user: CurrentUserDep, agent: dict) -> Any:
 
 
 @setting_router.put("/agents/{agent_id}/default")
-def set_default_agent(current_user: CurrentUserDep, agent_id: str) -> Any:
+async def set_default_agent(current_user: CurrentUserDep, agent_id: str) -> Any:
     '''
     设置默认智能体
     '''
@@ -233,7 +233,7 @@ def set_default_agent(current_user: CurrentUserDep, agent_id: str) -> Any:
 
 
 @setting_router.delete("/agents/{agent_id}")
-def del_agent(current_user: CurrentUserDep, agent_id: str) -> Any:
+async def del_agent(current_user: CurrentUserDep, agent_id: str) -> Any:
     '''
     删除智能体
     '''
@@ -250,7 +250,7 @@ def del_agent(current_user: CurrentUserDep, agent_id: str) -> Any:
     
     return ResponseUtil.success(msg="删除成功")
 
-def _delete_agent_by_name(agent_id: str) -> bool:
+async def _delete_agent_by_name(agent_id: str) -> bool:
     """
     内部辅助函数：根据名称删除智能体
     :param agent_id: 智能体ID
@@ -281,7 +281,7 @@ def _delete_agent_by_name(agent_id: str) -> bool:
 
 # 话术组管理#####################################################################################
 @setting_router.get("/greeting_config")
-def get_greeting_config(current_user: CurrentUserDep) -> Any:
+async def get_greeting_config(current_user: CurrentUserDep) -> Any:
     '''
         获取话术组配置
         文件示例:
@@ -337,7 +337,7 @@ def get_greeting_config(current_user: CurrentUserDep) -> Any:
 
 
 @setting_router.post("/greeting_config")
-def save_greeting_config(current_user: CurrentUserDep, config: dict) -> Any:
+async def save_greeting_config(current_user: CurrentUserDep, config: dict) -> Any:
     '''
     保存话术组配置
     '''
@@ -351,7 +351,7 @@ def save_greeting_config(current_user: CurrentUserDep, config: dict) -> Any:
 
 # 朋友圈评论#####################################################################################
 @setting_router.get("/moment_settings")
-def get_friend_comment_config(current_user: CurrentUserDep) -> Any:
+async def get_friend_comment_config(current_user: CurrentUserDep) -> Any:
     '''
     获取朋友圈评论配置
     '''
@@ -380,7 +380,7 @@ def get_friend_comment_config(current_user: CurrentUserDep) -> Any:
         return ResponseUtil.error(msg="配置文件格式错误")
 
 @setting_router.post("/moment_settings")
-def save_friend_comment_config(current_user: CurrentUserDep, config: dict) -> Any:
+async def save_friend_comment_config(current_user: CurrentUserDep, config: dict) -> Any:
     '''
     保存朋友圈评论配置
     moment_settings.json文件示例:
@@ -404,7 +404,7 @@ def save_friend_comment_config(current_user: CurrentUserDep, config: dict) -> An
 
 # AI回复配置#####################################################################################
 @setting_router.get("/chat_history_settings")
-def get_ai_reply_config(current_user: CurrentUserDep) -> Any:
+async def get_ai_reply_config(current_user: CurrentUserDep) -> Any:
     '''
     获取AI回复配置
     '''
@@ -437,7 +437,7 @@ def get_ai_reply_config(current_user: CurrentUserDep) -> Any:
         return ResponseUtil.error(msg="配置文件格式错误")
 
 @setting_router.post("/chat_history_settings")
-def save_ai_reply_config(current_user: CurrentUserDep, config: dict) -> Any:
+async def save_ai_reply_config(current_user: CurrentUserDep, config: dict) -> Any:
     '''
     保存AI回复配置
     chat_history_settings.json 配置文件示例:
@@ -468,7 +468,7 @@ def save_ai_reply_config(current_user: CurrentUserDep, config: dict) -> Any:
     return ResponseUtil.success()
 # 预警配置#####################################################################################
 @setting_router.get("/alert_settings")
-def get_alert_config(current_user: CurrentUserDep) -> Any:
+async def get_alert_config(current_user: CurrentUserDep) -> Any:
     '''
     获取预警配置
     '''
@@ -491,7 +491,7 @@ def get_alert_config(current_user: CurrentUserDep) -> Any:
         return ResponseUtil.error(msg="配置文件格式错误")
     
 @setting_router.post("/alert_settings")
-def save_alert_config(current_user: CurrentUserDep, config: dict) -> Any:
+async def save_alert_config(current_user: CurrentUserDep, config: dict) -> Any:
     '''
     保存预警配置
     alert_settings.json 配置文件示例:
@@ -508,7 +508,7 @@ def save_alert_config(current_user: CurrentUserDep, config: dict) -> Any:
     return ResponseUtil.success()
 
 @setting_router.post("/test_alert_email")
-def send_test_alert_email(email: str) -> Any: 
+async def send_test_alert_email(email: str) -> Any: 
     '''
     发送测试预警邮件
     '''
@@ -528,7 +528,7 @@ def send_test_alert_email(email: str) -> Any:
     
 # 休息时间设置#####################################################################################
 @setting_router.get("/rest_time_settings")
-def get_rest_time_config(current_user: CurrentUserDep) -> Any:
+async def get_rest_time_config(current_user: CurrentUserDep) -> Any:
     '''
     获取休息时间配置
     {
@@ -565,7 +565,7 @@ def get_rest_time_config(current_user: CurrentUserDep) -> Any:
         return ResponseUtil.error(msg="配置文件格式错误")
     
 @setting_router.post("/rest_time_settings")
-def save_rest_time_config(current_user: CurrentUserDep, config: dict) -> Any:
+async def save_rest_time_config(current_user: CurrentUserDep, config: dict) -> Any:
     '''
     保存休息时间配置
     rest_time_settings.json 配置文件示例:

@@ -1,8 +1,8 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { Modal, Checkbox, TimePicker, InputNumber, Select, message } from 'ant-design-vue';
 import dayjs from 'dayjs';
-import { syncFriend, syncGroup } from '../api/custom';
+import { syncFriend, syncGroup, getCurrentUser } from '../api/custom';
 
 const props = defineProps({
   modelValue: {
@@ -14,7 +14,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'sync-success']);
 
 const syncSettings = ref({
-  account: ['albertyan','yanming'],
+  account: undefined,
   syncItems: ['groups'],
   syncFrequency: 7,
   startTime: dayjs('02:00', 'HH:mm'),
@@ -22,16 +22,33 @@ const syncSettings = ref({
   isEnabled: false
 });
 
-const accountOptions = ref([
-  {
-    label: 'albertyan',
-    value: 'albertyan'
-  },
-  {
-    label: 'yanming',
-    value: 'yanming'
+const accountOptions = ref([]);
+
+const fetchCurrentUser = async () => {
+  try {
+    const res = await getCurrentUser();
+    if (res.code === 200 && res.data) {
+      const user = res.data;
+      accountOptions.value = [{
+        label: user.wxNickname,
+        value: user.wxNumber
+      }];
+      // 默认选中当前用户
+      syncSettings.value.account = user.wxNumber;
+    }
+  } catch (error) {
+    console.error('获取当前用户失败:', error);
+    //message.error('获取当前账号信息失败');
   }
-]);
+};
+
+const init = () => {
+    fetchCurrentUser();
+}
+
+onMounted(() => {
+  init();
+});
 
 const handleCancel = () => {
   emit('update:modelValue', false);
@@ -41,12 +58,16 @@ const isSyncingFriends = ref(false);
 
 const handleSyncFriends = async () => {
   if (isSyncingFriends.value) return;
+  if (!syncSettings.value.account) {
+    message.warning('请先选择账号');
+    return;
+  }
   isSyncingFriends.value = true;
   try {
-    const res = await syncFriend();
+    const res = await syncFriend(syncSettings.value.account);
     if (res.code === 200) {
       message.success(res.message || '好友同步成功');
-      emit('sync-success');
+      emit('sync-success', syncSettings.value.account);
     } else {
       message.error(res.message || '好友同步失败');
     }
@@ -61,12 +82,16 @@ const isSyncingGroups = ref(false);
 
 const handleSyncGroups = async () => {
   if (isSyncingGroups.value) return;
+  if (!syncSettings.value.account) {
+    message.warning('请先选择账号');
+    return;
+  }
   isSyncingGroups.value = true;
   try {
-    const res = await syncGroup();
+    const res = await syncGroup(syncSettings.value.account);  
     if (res.code === 200) {
       message.success(res.msg || '群聊同步成功');
-      emit('sync-success');
+      emit('sync-success', syncSettings.value.account);
     } else {
       message.error(res.msg || '群聊同步失败');
     }
@@ -108,7 +133,7 @@ const handleSyncGroups = async () => {
             <span class="w-16 text-slate-600">账号：</span>
             <div class="flex-1">
               <Select
-                v-model="syncSettings.account"
+                v-model:value="syncSettings.account"
                 :options="accountOptions"
                 class="w-full"
                 placeholder="请选择账号"

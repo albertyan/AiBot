@@ -32,7 +32,9 @@ class LogConfig:
     """
     
     # 日志存储路径
-    LOG_PATH = Path(os.getcwd()) / "logs"
+    # 使用绝对路径，确保始终在项目根目录下的 logs 目录
+    # PROJECT_ROOT = AiBot/
+    LOG_PATH = Path(__file__).resolve().parent.parent.parent.parent / "logs"
     
     # 日志格式
     # 简单的格式：时间 | 级别 | 模块:行号 - 消息

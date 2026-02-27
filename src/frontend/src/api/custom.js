@@ -1,5 +1,9 @@
-export const syncFriend = async () => {
-  const response = await fetch('/api/custom/sync_friend');
+export const syncFriend = async (wxNumber) => {
+  if (!wxNumber) {
+    throw new Error('请提供微信号');
+  }
+  const url = `/api/custom/sync_friend?wx_number=${wxNumber}`;
+  const response = await fetch(url);
   if (response.ok) {
     return await response.json();
   } else {
@@ -7,8 +11,12 @@ export const syncFriend = async () => {
   }
 };
 
-export const syncGroup = async () => {
-  const response = await fetch('/api/custom/sync_group');
+export const syncGroup = async (wxNumber) => {
+  if (!wxNumber) {
+    throw new Error('请提供微信号');
+  }
+  const url = `/api/custom/sync_group?wx_number=${wxNumber}`;
+  const response = await fetch(url);
   if (response.ok) {
     return await response.json();
   } else {
@@ -16,8 +24,13 @@ export const syncGroup = async () => {
   }
 };
 
-export const getFriends = async () => {
-  const response = await fetch('/api/custom/friends');
+export const getFriends = async (wxNumber) => {
+  console.log('currentUser.wxNumber', wxNumber);
+  if (!wxNumber) {
+    throw new Error('请提供微信号');
+  }
+  const url = `/api/custom/friends?wx_number=${wxNumber}`;
+  const response = await fetch(url);
   if (response.ok) {
     return await response.json();
   } else {
@@ -25,8 +38,12 @@ export const getFriends = async () => {
   }
 };
 
-export const getGroups = async () => {
-  const response = await fetch('/api/custom/groups');
+export const getGroups = async (wxNumber) => {
+  if (!wxNumber) {
+    throw new Error('请提供微信号');
+  }
+  const url = `/api/custom/groups?wx_number=${wxNumber}`;
+  const response = await fetch(url);
   if (response.ok) {
     return await response.json();
   } else {
@@ -34,8 +51,12 @@ export const getGroups = async () => {
   }
 };
 
-export const getFriendTags = async () => {
-  const response = await fetch('/api/custom/friend_tags');
+export const getFriendTags = async (wxNumber) => {
+  if (!wxNumber) {
+    throw new Error('请提供微信号');
+  }
+  const url = `/api/custom/friend_tags?wx_number=${wxNumber}`;
+  const response = await fetch(url);
   if (response.ok) {
     return await response.json();
   } else {
@@ -43,8 +64,12 @@ export const getFriendTags = async () => {
   }
 };
 
-export const getGroupTags = async () => {
-  const response = await fetch('/api/custom/group_tags');
+export const getGroupTags = async (wxNumber) => {
+  if (!wxNumber) {
+    throw new Error('请提供微信号');
+  }
+  const url = `/api/custom/group_tags?wx_number=${wxNumber}`;
+  const response = await fetch(url);
   if (response.ok) {
     return await response.json();
   } else {
@@ -52,8 +77,12 @@ export const getGroupTags = async () => {
   }
 };
 
-export const setGroupTags = async (groups, tag) => {
-  const response = await fetch('/api/custom/set_group_tags?tag=' + encodeURIComponent(tag), {
+export const setGroupTags = async (wxNumber, groups, tag) => {
+  if (!wxNumber) {
+    throw new Error('请提供微信号');
+  }
+  const url = `/api/custom/set_group_tags?wx_number=${wxNumber}&tag=${encodeURIComponent(tag)}`;
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -64,5 +93,14 @@ export const setGroupTags = async (groups, tag) => {
     return await response.json();
   } else {
     throw new Error('设置群聊标签失败');
+  }
+};
+
+export const getCurrentUser = async () => {
+  const response = await fetch('/api/custom/current_user');
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('获取当前用户失败');
   }
 };

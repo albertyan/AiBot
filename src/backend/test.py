@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import time
+import pythoncom
 from pywinauto import mouse
 from pywinauto import Desktop
 
@@ -8,13 +9,14 @@ from pywinauto import Desktop
 
 
 # from pywechat.WechatTools import Tools
-from pyweixin.Uielements import (Login_window,Main_window,SideBar,Independent_window,Buttons,Texts,Menus,TabItems,MenuItems,Edits,Windows)
+
 # from pywechat.WechatAuto import get_groups_info,WechatSettings
 from pywinauto.timings import Timings
-from pyweixin.WeChatAuto import Contacts
+
 
 from auto.WeChatToolsExt import ToolsExt,NavigatorExt
 from auto.WeChatAutoExt import ContactsExt,MessagesExt, FriendSettingsExt
+from auto.UielementsExt import (Login_window,Main_window,SideBar,Independent_window,Buttons,Texts,Menus,TabItems,MenuItems,Edits,Windows,)
 
 # Buttons=Buttons()#微信内部Button类型UI
 Main_window=Main_window()#微信内部Window类型UI
@@ -149,7 +151,12 @@ Timings.slow()
 #     print(group[1])
 
 
+
 print(MessagesExt.check_new_messages())
 print("*" * 30)
+
 # FriendSettingsExt.change_remark('张建坤','张建坤1')
-print(MessagesExt.dump_recent_sessions('Today'))
+# print(MessagesExt.dump_recent_sessions('Today'))
+
+# from pyweixin.WeChatAuto import Messages
+# Messages.check_new_messages(search_pages=0)
