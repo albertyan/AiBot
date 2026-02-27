@@ -76,7 +76,7 @@ export const getAgents = async () => {
 };
 
 export const addAgent = async (agent) => {
-  const response = await fetch('/api/setting/add_agent', {
+  const response = await fetch('/api/setting/add_agents', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
