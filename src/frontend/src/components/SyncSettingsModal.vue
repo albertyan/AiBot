@@ -2,7 +2,8 @@
 import { ref, onMounted } from 'vue';
 import { Modal, Checkbox, TimePicker, InputNumber, Select, message } from 'ant-design-vue';
 import dayjs from 'dayjs';
-import { syncFriend, syncGroup, getCurrentUser } from '../api/custom';
+import { syncFriend, syncGroup } from '../api/custom';
+import { get_current_user } from '../stores/user';
 
 const props = defineProps({
   modelValue: {
@@ -26,11 +27,10 @@ const accountOptions = ref([]);
 
 const fetchCurrentUser = async () => {
   try {
-    const res = await getCurrentUser();
-    if (res.code === 200 && res.data) {
-      const user = res.data;
+    const user = get_current_user();
+    if (user) {
       accountOptions.value = [{
-        label: user.wxNickname,
+        label: user.wxNickname || user.nickname,
         value: user.wxNumber
       }];
       // 默认选中当前用户

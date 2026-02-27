@@ -106,9 +106,9 @@ from .Errors import NetWorkError
 from .Errors import NoSuchFriendError
 from .Errors import NotFriendError,NotStartError,NotLoginError
 from .Errors import NoResultsError,NotInstalledError
-from pyweixin.Uielements import (Login_window,Main_window,SideBar,Independent_window,ListItems,
+from .Uielements import (Login_window,Main_window,SideBar,Independent_window,ListItems,
 Buttons,Texts,Menus,TabItems,Lists,Edits,Windows,Panes)
-from pyweixin.WinSettings import SystemSettings 
+from .WinSettings import SystemSettings 
 ##########################################################################################
 
 #各种UI实例化

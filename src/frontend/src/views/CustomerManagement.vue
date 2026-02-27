@@ -4,7 +4,8 @@ import { message } from 'ant-design-vue';
 import NavBar from '../components/NavBar.vue';
 import SyncSettingsModal from '../components/SyncSettingsModal.vue';
 import SetGroupTagsModal from '../components/SetGroupTagsModal.vue';
-import { getFriends, getGroups, getFriendTags, getGroupTags, getCurrentUser } from '../api/custom';
+import { getFriends, getGroups, getFriendTags, getGroupTags } from '../api/custom';
+import { get_current_user } from '../stores/user';
 
 const activeTab = ref('friends');
 const selectedFriendIds = ref([]);
@@ -36,16 +37,14 @@ const getColor = (name) => {
 
 onMounted(async () => {
   try {
-    const userRes = await getCurrentUser();
-    if (userRes.code === 200 && userRes.data) {
-      currentUser.value = userRes.data;
+    const user = get_current_user();
+    if (user) {
+      currentUser.value = user;
       if (currentUser.value.wxNumber) {
         await fetchData(currentUser.value.wxNumber);
       } else {
         message.warning('当前用户未绑定微信号，请先进行同步设置');
       }
-    } else {
-      message.error('获取当前用户信息失败');
     }
   } catch (error) {
     message.error('获取当前用户信息发生错误');

@@ -1,4 +1,4 @@
-from pyweixin.WeChatAuto import AutoReply, Call, Collections, Contacts, FriendSettings, Files, Settings, Moments, Messages, Monitor
+from .pyweixin.WeChatAuto import AutoReply, Call, Collections, Contacts, FriendSettings, Files, Settings, Moments, Messages, Monitor
 
 
 class AutoReplyExt(AutoReply):

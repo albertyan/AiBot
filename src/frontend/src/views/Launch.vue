@@ -3,8 +3,10 @@ import { useRouter } from 'vue-router';
 import { ref } from 'vue';
 import { message } from 'ant-design-vue';
 import { getDashboardData } from '../api/launch';
+import { useUserStore } from '../stores/user';
 
 const router = useRouter();
+const userStore = useUserStore();
 const isLoading = ref(false);
 const errorMessage = ref('');
 
@@ -15,7 +17,13 @@ const handleLaunch = async () => {
     const data = await getDashboardData();
     console.log('Dashboard data:', data);
     if (data.code === 200) {
-      router.push({ path: '/home', query: data.data || data });
+      const userInfo = data.data || data;
+      // Normalize nickname to wxNickname to match CurrentUser structure expected by other components
+      if (userInfo.nickname && !userInfo.wxNickname) {
+        userInfo.wxNickname = userInfo.nickname;
+      }
+      userStore.setUserInfo(userInfo);
+      router.push({ path: '/home', query: userInfo });
     } else {
       const msg = data.msg || '启动失败';
       errorMessage.value = msg;

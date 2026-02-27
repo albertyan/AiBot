@@ -18,6 +18,36 @@ def check_base_dir():
         logger.error(f"[check_base_dir] check base dir error: {e}")
         raise e
 
+def check_personal_dir(wxNumber: str):
+    '''
+    检查个人目录是否存在， 如果不存在则创建
+    '''
+    try:
+        # 找到用户目录
+        user_dir = Path.home()
+        personal_dir = os.path.join(user_dir, ".aiBot", wxNumber)
+        if not os.path.exists(personal_dir):
+            logger.info(f"create it: {personal_dir}")
+            os.makedirs(personal_dir)
+    except Exception as e:
+        logger.error(f"[check_personal_dir] check personal dir error: {e}")
+        raise e
+    
+def get_personal_dir(wxNumber: str):
+    '''
+    获取个人目录
+    '''
+    try:
+        # 找到用户目录
+        user_dir = Path.home()
+        personal_dir = os.path.join(user_dir, ".aiBot", wxNumber)
+        logger.info(f"personal dir: {personal_dir}")
+        return personal_dir
+    except Exception as e:
+        logger.error(f"[get_personal_dir] get personal dir error: {e}")
+        raise e
+
+
 def get_base_dir():
     """
     获取用户目录
@@ -31,6 +61,8 @@ def get_base_dir():
     except Exception as e:
         logger.error(f"[get_base_dir] get base dir error: {e}")
         raise e
+
+
 
 if __name__ == "__main__":
     check_base_dir()

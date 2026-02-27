@@ -1,6 +1,8 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { Modal, Input, Tooltip } from 'ant-design-vue';
+import { ref, computed, onMounted } from 'vue';
+import { Modal, Input, Tooltip, message } from 'ant-design-vue';
+import AiAssistantModal from './AiAssistantModal.vue';
+import { getAiConfig, saveAiAgent, deleteAiAgent } from '../api/aisale';
 
 const props = defineProps({
   modelValue: {
@@ -16,9 +18,92 @@ const visible = computed({
   set: (val) => emit('update:modelValue', val)
 });
 
-const assistants = ref([
-  { id: 1, name: '过敏', tag: '单聊', enabled: false }
-]);
+const assistants = ref([]);
+
+const loadAssistants = async () => {
+  try {
+    const res = await getAiConfig();
+    const staffList = res?.data?.config?.staffList;
+    if (Array.isArray(staffList)) {
+      assistants.value = staffList.map(item => ({
+        ...item,
+        tag: item.chatType === 'group' ? '群聊' : '单聊'
+      }));
+    } else {
+      assistants.value = [];
+    }
+  } catch (error) {
+    console.error(error);
+    assistants.value = [];
+  }
+};
+
+// Assistant Modal State
+const isAssistantModalVisible = ref(false);
+const currentAssistant = ref(null);
+
+const handleAddAssistant = () => {
+  currentAssistant.value = null;
+  isAssistantModalVisible.value = true;
+};
+
+const handleEditAssistant = (assistant) => {
+  currentAssistant.value = {
+    id: assistant.id,
+    name: assistant.name,
+    chatType: assistant.chatType === 'group' ? 'group' : 'single',
+    agentId: assistant.agentId,
+    selectedTags: Array.isArray(assistant.selectedTags) ? assistant.selectedTags : []
+  };
+  isAssistantModalVisible.value = true;
+};
+
+const handleAssistantSave = async (data) => {
+  try {
+    const payload = {
+      id: data?.id,
+      name: data?.name,
+      chatType: data?.chatType,
+      agentId: data?.agentId,
+      selectedTags: data?.selectedTags
+    };
+    const res = await saveAiAgent(payload);
+    if (res?.code === 200) {
+      message.success('保存成功');
+      await loadAssistants();
+    } else {
+      message.error(res?.msg || '保存失败');
+    }
+  } catch (error) {
+    console.error(error);
+    message.error('保存失败');
+  } finally {
+    isAssistantModalVisible.value = false;
+  }
+};
+
+const handleDeleteAssistant = (assistant) => {
+  Modal.confirm({
+    title: '确认删除',
+    content: `确定要删除AI助理 "${assistant.name}" 吗？`,
+    okText: '确认',
+    cancelText: '取消',
+    async onOk() {
+      try {
+        const res = await deleteAiAgent(assistant.id);
+        if (res?.code === 200) {
+          message.success('删除成功');
+          await loadAssistants();
+        } else {
+          message.error(res?.msg || '删除失败');
+        }
+      } catch (error) {
+        console.error(error);
+        message.error('删除失败');
+      }
+    }
+  });
+};
 
 // General Config State
 const isGeneralConfigExpanded = ref(false);
@@ -63,6 +148,10 @@ const handleSave = () => {
   // Logic to save configuration
   visible.value = false;
 };
+
+onMounted(() => {
+  loadAssistants();
+});
 </script>
 
 <template>
@@ -84,7 +173,10 @@ const handleSave = () => {
       <div class="border border-slate-200 rounded-xl p-5 bg-white shadow-sm">
         <div class="flex items-center justify-between mb-4">
           <h3 class="font-bold text-slate-800 text-base">AI助理配置</h3>
-          <button class="px-3 py-1 bg-[#2563eb] text-white text-xs rounded-md hover:bg-[#1d4ed8] transition-colors flex items-center space-x-1">
+          <button 
+            @click="handleAddAssistant"
+            class="px-3 py-1 bg-[#2563eb] text-white text-xs rounded-md hover:bg-[#1d4ed8] transition-colors flex items-center space-x-1"
+          >
             <i class="ri-add-line"></i>
             <span>AI助理</span>
           </button>
@@ -114,13 +206,6 @@ const handleSave = () => {
               <!-- Toggle Switch -->
               <div class="flex flex-col items-end">
                 <div 
-                  v-if="!assistant.enabled"
-                  class="bg-white border border-slate-200 shadow-sm text-slate-500 text-[10px] px-2 py-1 rounded mb-1 relative"
-                >
-                  AI助理未启用
-                  <div class="absolute bottom-[-4px] right-3 w-2 h-2 bg-white border-b border-r border-slate-200 transform rotate-45"></div>
-                </div>
-                <div 
                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer"
                   :class="assistant.enabled ? 'bg-[#2563eb]' : 'bg-slate-200'"
                   @click="assistant.enabled = !assistant.enabled"
@@ -133,10 +218,16 @@ const handleSave = () => {
               </div>
               
               <div class="flex items-center space-x-2 text-slate-400">
-                <button class="p-1 hover:text-[#2563eb] transition-colors">
+                <button 
+                  @click="handleEditAssistant(assistant)"
+                  class="p-1 hover:text-[#2563eb] transition-colors"
+                >
                   <i class="ri-edit-line text-lg"></i>
                 </button>
-                <button class="p-1 hover:text-red-500 transition-colors">
+                <button 
+                  @click="handleDeleteAssistant(assistant)"
+                  class="p-1 hover:text-red-500 transition-colors"
+                >
                   <i class="ri-delete-bin-line text-lg"></i>
                 </button>
               </div>
@@ -348,6 +439,13 @@ const handleSave = () => {
         </div>
       </div>
     </div>
+
+    <!-- AI Assistant Edit/Add Modal -->
+    <AiAssistantModal 
+      v-model="isAssistantModalVisible" 
+      :assistant-data="currentAssistant"
+      @save="handleAssistantSave"
+    />
 
     <!-- Footer Buttons -->
     <div class="flex justify-end space-x-3 mt-8">

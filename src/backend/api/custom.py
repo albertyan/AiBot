@@ -23,10 +23,10 @@ async def get_current_user(current_user: CurrentUserDep) -> Any:
 async def sync_friend(wx_number: str, db: AsyncSession = Depends(get_db)) -> Any:
     '''
     同步好友列表
-    '''
     # info={'昵称':nickname,'微信号':wx_number,'地区':region,'备注':remark,'电话':phonenumber,
     # '标签':tag,'描述':descrption,'朋友权限':permission,'共同群聊':f'{common_group_num}','个性签名':signature,'来源':source}
     # 同步好友列表
+    '''
 
     # 删除当前用户的好友列表
     stmt = delete(Friends).where(Friends.account_id == wx_number)
@@ -46,22 +46,13 @@ async def sync_friend(wx_number: str, db: AsyncSession = Depends(get_db)) -> Any
                 tag_counts[tag] = tag_counts.get(tag, 0) + 1
 
         # 如果不存在，则创建新记录
-        new_friend = Friends(account_id=wx_number,
-                             wxid=friend['微信号'],
-                             remark=friend['备注'],
-                             tag=friend['标签'],
-                             nickname=friend['昵称'],
-                             name=friend['昵称'],
-                             region=friend['地区'],
-                             permission=friend['朋友权限'],
-                             phonenumber=friend['电话'],
-                             description=friend['描述'],
-                             source=friend['来源'],
-                             signature=friend['个性签名'],
-                             is_new=0,
-                             create_time=func.now(),
-                             update_time=func.now(),
-                             del_flag=0)
+        new_friend = Friends(account_id=wx_number, wxid=friend['微信号'],
+                             remark=friend['备注'], tag=friend['标签'],
+                             nickname=friend['昵称'], name=friend['昵称'],
+                             region=friend['地区'], permission=friend['朋友权限'],
+                             phonenumber=friend['电话'], description=friend['描述'],
+                             source=friend['来源'], signature=friend['个性签名'], is_new=0,
+                             create_time=func.now(), update_time=func.now(), del_flag=0)
         db.add(new_friend)
     # 提交事务
     await db.commit()

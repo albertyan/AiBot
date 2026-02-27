@@ -3,3 +3,4 @@ from .setting import *
 from .license import *
 from .custom import *
 from .autosop import *  
+from .aisale import *

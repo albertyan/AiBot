@@ -54,7 +54,7 @@ mimetypes.add_type("application/javascript", ".js")
 mimetypes.add_type("text/css", ".css")
 
 from router import router_manager
-from api import home_router, setting_router, custom_router, autosop_router
+from api import home_router, setting_router, custom_router, autosop_router, aisale_router
 # import baseUtil
 
 # 前端文件目录
@@ -82,6 +82,7 @@ app.include_router(setting_router, prefix="/api/setting", tags=["config"])
 app.include_router(home_router, prefix="/api/home", tags=["home"])
 app.include_router(custom_router, prefix="/api/custom", tags=["custom"])
 app.include_router(autosop_router, prefix="/api/autosop", tags=["autosop"])
+app.include_router(aisale_router, prefix="/api/aisale", tags=["aisale"])
 app.mount("/assets", StaticFiles(directory=static_dir), name="assets")
 
 

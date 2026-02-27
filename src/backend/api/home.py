@@ -7,13 +7,13 @@ from sqlalchemy import select, func
 from pywinauto.timings import Timings
 from pywinauto import mouse
 
-
 from db.get_db import get_db
 from db.models import Friends, Groups, WechatAccounts
 from auto.WeChatToolsExt import ToolsExt,NavigatorExt
 from auto.UielementsExt import PopUpProfileWindow
 from environment import CurrentUser, CurrentUserDep, state
 
+from utils.config_file import check_base_dir, check_personal_dir
 from utils.response_util import ResponseUtil
 
 PopUpProfileWindow = PopUpProfileWindow()
@@ -98,7 +98,10 @@ async def get_dashboard_data(db: AsyncSession = Depends(get_db)) -> Any :
     stmt = select(func.count(Groups.id)).where(Groups.account_id == wxNumber)
     result = await db.execute(stmt)
     group_count = result.scalar()
-
+    # 检查用户目录是否存在， 如果不存在则创建
+    check_base_dir()
+    # 检查个人目录是否存在， 如果不存在则创建
+    check_personal_dir(wxNumber)
     return ResponseUtil.success(
             msg=(f"当前微信号: {wxNumber}, 状态: {'在线' if is_running else '离线'}"),
             data={

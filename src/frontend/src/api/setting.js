@@ -1,5 +1,5 @@
 export const getGreetingConfig = async () => {
-  const response = await fetch('/api/setting/greeting_config');
+  const response = await fetch('/api/setting/get_greeting_config');
   if (response.ok) {
     return await response.json();
   } else {
@@ -8,7 +8,7 @@ export const getGreetingConfig = async () => {
 };
 
 export const saveGreetingConfig = async (config) => {
-  const response = await fetch('/api/setting/greeting_config', {
+  const response = await fetch('/api/setting/save_greeting_config', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -23,7 +23,7 @@ export const saveGreetingConfig = async (config) => {
 };
 
 export const getDifySettings = async () => {
-  const response = await fetch('/api/setting/dify_settings');
+  const response = await fetch('/api/setting/get_dify_settings');
   if (response.ok) {
     return await response.json();
   } else {
@@ -32,7 +32,7 @@ export const getDifySettings = async () => {
 };
 
 export const saveDifySettings = async (baseUrl) => {
-  const response = await fetch(`/api/setting/dify_settings?baseUrl=${encodeURIComponent(baseUrl)}`, {
+  const response = await fetch(`/api/setting/save_dify_settings?baseUrl=${encodeURIComponent(baseUrl)}`, {
     method: 'POST'
   });
   if (response.ok) {
@@ -43,7 +43,7 @@ export const saveDifySettings = async (baseUrl) => {
 };
 
 export const getCozeSettings = async () => {
-  const response = await fetch('/api/setting/coze_settings');
+  const response = await fetch('/api/setting/get_coze_settings');
   if (response.ok) {
     return await response.json();
   } else {
@@ -52,7 +52,7 @@ export const getCozeSettings = async () => {
 };
 
 export const setCozeSettings = async (token) => {
-  const response = await fetch('/api/setting/coze_settings', {
+  const response = await fetch('/api/setting/save_coze_settings', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -67,7 +67,7 @@ export const setCozeSettings = async (token) => {
 };
 
 export const getAgents = async () => {
-  const response = await fetch('/api/setting/agents');
+  const response = await fetch('/api/setting/get_all_agents');
   if (response.ok) {
     return await response.json();
   } else {
@@ -76,7 +76,7 @@ export const getAgents = async () => {
 };
 
 export const addAgent = async (agent) => {
-  const response = await fetch('/api/setting/agents', {
+  const response = await fetch('/api/setting/add_agent', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -91,7 +91,7 @@ export const addAgent = async (agent) => {
 };
 
 export const deleteAgent = async (id) => {
-  const response = await fetch(`/api/setting/agents/${id}`, {
+  const response = await fetch(`/api/setting/delete_agents/${id}`, {
     method: 'DELETE'
   });
   if (response.ok) {
@@ -113,7 +113,7 @@ export const setDefaultAgent = async (id) => {
 };
 
 export const getMomentSettings = async () => {
-  const response = await fetch('/api/setting/moment_settings');
+  const response = await fetch('/api/setting/get_moment_settings');
   if (response.ok) {
     return await response.json();
   } else {
@@ -122,7 +122,7 @@ export const getMomentSettings = async () => {
 };
 
 export const saveMomentSettings = async (settings) => {
-  const response = await fetch('/api/setting/moment_settings', {
+  const response = await fetch('/api/setting/save_moment_settings', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -137,7 +137,7 @@ export const saveMomentSettings = async (settings) => {
 };
 
 export const getChatHistorySettings = async () => {
-  const response = await fetch('/api/setting/chat_history_settings');
+  const response = await fetch('/api/setting/get_chat_history_settings');
   if (response.ok) {
     return await response.json();
   } else {
@@ -146,7 +146,7 @@ export const getChatHistorySettings = async () => {
 };
 
 export const saveChatHistorySettings = async (settings) => {
-  const response = await fetch('/api/setting/chat_history_settings', {
+  const response = await fetch('/api/setting/save_chat_history_settings', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -172,7 +172,7 @@ export const sendTestAlertEmail = async (email) => {
 };
 
 export const getAlertSettings = async () => {
-  const response = await fetch('/api/setting/alert_settings');
+  const response = await fetch('/api/setting/get_alert_settings');
   if (response.ok) {
     return await response.json();
   } else {
@@ -181,7 +181,7 @@ export const getAlertSettings = async () => {
 };
 
 export const saveAlertSettings = async (settings) => {
-  const response = await fetch('/api/setting/alert_settings', {
+  const response = await fetch('/api/setting/save_alert_settings', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -196,7 +196,7 @@ export const saveAlertSettings = async (settings) => {
 };
 
 export const getRestTimeSettings = async () => {
-  const response = await fetch('/api/setting/rest_time_settings');
+  const response = await fetch('/api/setting/get_rest_time_settings');
   if (response.ok) {
     return await response.json();
   } else {
@@ -205,7 +205,7 @@ export const getRestTimeSettings = async () => {
 };
 
 export const saveRestTimeSettings = async (settings) => {
-  const response = await fetch('/api/setting/rest_time_settings', {
+  const response = await fetch('/api/setting/save_rest_time_settings', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'

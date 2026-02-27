@@ -4,13 +4,13 @@ import re
 import time
 import pyautogui
 import win32gui
-from pyweixin.Config import GlobalConfig
+from .pyweixin.Config import GlobalConfig
 from pywinauto import mouse,Desktop
 from pywinauto.controls.uia_controls import ListViewWrapper,ListItemWrapper,EditWrapper #TypeHint要用到
 from pywinauto import WindowSpecification
-from pyweixin.Uielements import (Login_window,Main_window,SideBar,Independent_window,ListItems,
+from .pyweixin.Uielements import (Login_window,Main_window,SideBar,Independent_window,ListItems,
 Buttons,Texts,Menus,TabItems,Lists,Edits,Windows,Panes)
-from pyweixin.WinSettings import SystemSettings 
+from .pyweixin.WinSettings import SystemSettings 
 ##########################################################################################
 
 #各种UI实例化
@@ -30,7 +30,7 @@ ListItems=ListItems()#所有ListItem类型UI
 desktop=Desktop(backend='uia')#Window桌面
 pyautogui.FAILSAFE=False#防止鼠标在屏幕边缘处造成的误触
 
-from pyweixin.WeChatTools import WxWindowManage, Tools, Navigator
+from .pyweixin.WeChatTools import WxWindowManage, Tools, Navigator
 
 class WxWindowManageExt(WxWindowManage) :
     def __init__(self, class_name_re:str):

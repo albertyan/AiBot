@@ -150,9 +150,11 @@ Timings.slow()
 #     print(group[0])
 #     print(group[1])
 
+from pyweixin.utils import scan_for_new_messages,get_new_message_num
+# print(MessagesExt.check_new_messages())
+print(scan_for_new_messages())
+# print(get_new_message_num(close_weixin=False))
 
-
-print(MessagesExt.check_new_messages())
 print("*" * 30)
 
 # FriendSettingsExt.change_remark('张建坤','张建坤1')
