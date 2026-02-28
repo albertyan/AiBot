@@ -1,0 +1,54 @@
+{
+  "staffList": [
+    {
+      "id": "1772163331923",
+      "name": "a",
+      "enabled": true,
+      "agentId": "7532677049182355496",
+      "chatType": "single",
+      "selectedTags": [
+        "untagged"
+      ],
+      "keywords": []
+    },
+    {
+      "id": "1772163960715",
+      "name": "b",
+      "enabled": true,
+      "agentId": "7532677049182355496",
+      "chatType": "single",
+      "selectedTags": [
+        "untagged"
+      ],
+      "keywords": []
+    }
+  ],
+  "commonConfig": {
+    "groupAtOnly": true,
+    "colleagueNamesToIgnore": "c//d",
+    "filterWords": [
+      "人工",
+      "测试"
+    ],
+    "autoGreeting": {
+      "enabled": true,
+      "greetingGroupId": "A组"
+    },
+    "fileRecognition": {
+      "enabled": true,
+      "fileTypes": [
+        "excel",
+        "pdf"
+      ],
+      "filePath": "d:\\"
+    },
+    "whitelist": {
+      "enabled": true,
+      "names": "a//bb",
+      "list": [
+        "a",
+        "bb"
+      ]
+    }
+  }
+}

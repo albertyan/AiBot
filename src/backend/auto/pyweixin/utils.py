@@ -215,7 +215,7 @@ def scan_for_new_messages(main_window:WindowSpecification=None,delay:float=0.3,i
         senders=[listItem.automation_id().replace('session_item_','') for listItem in listItems]
         newMessageTips=[listItem.window_text() for listItem in listItems if listItem.window_text() not in newMessageSenders]
         newMessageNum=[int(new_message_pattern.search(text).group(1)) for text in newMessageTips]
-        return senders,newMessageNum
+        return senders,newMessageNum,newMessageTips
 
     not_care={'session_item_服务号','session_item_公众号'}
     if is_maximize is None:
@@ -252,11 +252,11 @@ def scan_for_new_messages(main_window:WindowSpecification=None,delay:float=0.3,i
             #遍历获取带有新消息的ListItem
             listItems=session_list.children(control_type='ListItem')
             time.sleep(delay)
-            senders,nums=traverse_messsage_list(listItems)
+            senders,nums,newMessageTips=traverse_messsage_list(listItems)
             ##提取姓名和数量
             newMessageNums.extend(nums)
             newMessageSenders.extend(senders)
-            newMessages_dict=dict(zip(newMessageSenders,newMessageNums))
+            newMessages_dict=dict(zip(newMessageSenders,newMessageTips))
             session_list.type_keys('{PGDN}')
             if listItems[-1].window_text()==last_item:
                 break

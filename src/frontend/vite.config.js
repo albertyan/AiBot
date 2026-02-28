@@ -26,6 +26,28 @@ export default defineConfig({
   },
   build: {
     outDir: '../../dist/gui',
-    emptyOutDir: true
+    emptyOutDir: true,
+    chunkSizeWarningLimit: 2000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('ant-design-vue') || id.includes('@ant-design')) {
+              return 'antd';
+            }
+            if (id.includes('echarts') || id.includes('zrender')) {
+               return 'echarts';
+            }
+            if (id.includes('lodash') || id.includes('underscore')) {
+                return 'utils';
+            }
+            if (id.includes('vue') || id.includes('@vue') || id.includes('pinia') || id.includes('vue-router')) {
+                return 'framework';
+            }
+            return 'vendor';
+          }
+        }
+      }
+    }
   }
 })

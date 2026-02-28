@@ -1,8 +1,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { Modal, Input, Tooltip, message } from 'ant-design-vue';
+import { Modal, Input, Tooltip, message, Select } from 'ant-design-vue';
 import AiAssistantModal from './AiAssistantModal.vue';
-import { getAiConfig, saveAiAgent, deleteAiAgent } from '../api/aisale';
+import { getAiConfig, saveAiAgent, deleteAiAgent, updateEnableStatus, saveCommonConfig } from '../api/aisale';
+import { getGreetingConfig } from '../api/setting';
 
 const props = defineProps({
   modelValue: {
@@ -19,22 +20,84 @@ const visible = computed({
 });
 
 const assistants = ref([]);
+const scriptGroups = ref([]);
 
-const loadAssistants = async () => {
+const loadConfig = async () => {
   try {
     const res = await getAiConfig();
-    const staffList = res?.data?.config?.staffList;
+    const config = res?.data?.config || {};
+    
+    // Load Assistants
+    const staffList = config.staffList;
     if (Array.isArray(staffList)) {
       assistants.value = staffList.map(item => ({
         ...item,
-        tag: item.chatType === 'group' ? '群聊' : '单聊'
+        tag: item.chatType === 'group' ? '群聊' : '单聊',
+        enabled: item.enabled !== false // Default to true if not present
       }));
     } else {
       assistants.value = [];
     }
+
+    // Load Common Config
+    const common = config.commonConfig || {};
+    autoGreeting.value = common.autoGreeting?.enabled || false;
+    autoGreetingGroupId.value = common.autoGreeting?.greetingGroupId || undefined;
+    
+    groupReplyAtOnly.value = common.groupAtOnly || false;
+    groupIgnoreList.value = common.colleagueNamesToIgnore || '';
+    
+    whitelistEnabled.value = common.whitelist?.enabled || false;
+    whitelistText.value = common.whitelist?.names || '';
+    
+    identifyFile.value = common.fileRecognition?.enabled !== false;
+    fileDirectory.value = common.fileRecognition?.filePath;
+    
+    const types = common.fileRecognition?.fileTypes || [];
+    fileTypes.value = {
+        word: types.includes('word') || false,
+        pdf: types.includes('pdf') || false,
+        excel: types.includes('excel') || false,
+        image: types.includes('image') || false
+    };
+
+    filterWords.value = common.filterWords || [];
+
+    // Load Script Groups
+    try {
+        const greetingRes = await getGreetingConfig();
+        if (greetingRes?.data && Array.isArray(greetingRes.data)) {
+            scriptGroups.value = greetingRes.data.map(g => ({ label: g.name, value: g.name }));
+        }
+    } catch (e) {
+        console.error("Failed to load greeting config", e);
+    }
+
   } catch (error) {
     console.error(error);
     assistants.value = [];
+  }
+};
+
+const handleToggleEnable = async (assistant) => {
+  const newStatus = !assistant.enabled;
+  // Optimistic update
+  assistant.enabled = newStatus;
+  
+  try {
+    const res = await updateEnableStatus(assistant.id, newStatus);
+    if (res?.code === 200) {
+      message.success(newStatus ? '已启用' : '已禁用');
+    } else {
+      // Revert on failure
+      assistant.enabled = !newStatus;
+      message.error(res?.msg || '状态更新失败');
+    }
+  } catch (error) {
+    console.error(error);
+    // Revert on error
+    assistant.enabled = !newStatus;
+    message.error('状态更新失败');
   }
 };
 
@@ -70,7 +133,7 @@ const handleAssistantSave = async (data) => {
     const res = await saveAiAgent(payload);
     if (res?.code === 200) {
       message.success('保存成功');
-      await loadAssistants();
+      await loadConfig();
     } else {
       message.error(res?.msg || '保存失败');
     }
@@ -93,7 +156,7 @@ const handleDeleteAssistant = (assistant) => {
         const res = await deleteAiAgent(assistant.id);
         if (res?.code === 200) {
           message.success('删除成功');
-          await loadAssistants();
+          await loadConfig();
         } else {
           message.error(res?.msg || '删除失败');
         }
@@ -108,6 +171,7 @@ const handleDeleteAssistant = (assistant) => {
 // General Config State
 const isGeneralConfigExpanded = ref(false);
 const autoGreeting = ref(false);
+const autoGreetingGroupId = ref(undefined);
 const groupReplyAtOnly = ref(false);
 const groupIgnoreList = ref('');
 const whitelistEnabled = ref(false);
@@ -115,14 +179,14 @@ const whitelistText = ref('');
 const identifyFile = ref(true);
 const fileTypes = ref({
   word: false,
-  pdf: true,
+  pdf: false,
   excel: false,
-  image: true
+  image: false
 });
-const fileDirectory = ref('D:\\WeChat Files\\albertyan');
+const fileDirectory = ref('');
 
 // Filter Words
-const filterWords = ref(['退订', '投诉', '人工']);
+const filterWords = ref([]);
 const showAddWordInput = ref(false);
 const newFilterWord = ref('');
 
@@ -144,13 +208,50 @@ const handleCancel = () => {
   visible.value = false;
 };
 
-const handleSave = () => {
-  // Logic to save configuration
-  visible.value = false;
+const handleSave = async () => {
+  // Validate File Directory
+  if (identifyFile.value && !fileDirectory.value.trim()) {
+    message.error('启用文件识别时，文件目录不能为空');
+    return;
+  }
+
+  const commonConfig = {
+    groupAtOnly: groupReplyAtOnly.value,
+    colleagueNamesToIgnore: groupIgnoreList.value,
+    filterWords: filterWords.value,
+    autoGreeting: {
+      enabled: autoGreeting.value,
+      greetingGroupId: autoGreetingGroupId.value
+    },
+    fileRecognition: {
+      enabled: identifyFile.value,
+      fileTypes: Object.keys(fileTypes.value).filter(k => fileTypes.value[k]),
+      filePath: fileDirectory.value
+    },
+    whitelist: {
+      enabled: whitelistEnabled.value,
+      names: whitelistText.value,
+      list: whitelistText.value.split('//').filter(n => n.trim())
+    }
+  };
+
+  try {
+    const res = await saveCommonConfig(commonConfig);
+    if (res?.code === 200) {
+      message.success('配置保存成功');
+      visible.value = false;
+      // Optionally reload to ensure sync, but we are closing anyway
+    } else {
+      message.error(res?.msg || '保存失败');
+    }
+  } catch (error) {
+    console.error(error);
+    message.error('保存失败');
+  }
 };
 
 onMounted(() => {
-  loadAssistants();
+  loadConfig();
 });
 </script>
 
@@ -205,17 +306,17 @@ onMounted(() => {
             <div class="flex items-center space-x-4">
               <!-- Toggle Switch -->
               <div class="flex flex-col items-end">
-                <div 
-                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer"
-                  :class="assistant.enabled ? 'bg-[#2563eb]' : 'bg-slate-200'"
-                  @click="assistant.enabled = !assistant.enabled"
-                >
-                  <span
-                    class="inline-block h-4 w-4 transform rounded-full bg-white transition transition-transform"
-                    :class="assistant.enabled ? 'translate-x-6' : 'translate-x-1'"
-                  />
-                </div>
+              <div 
+                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer"
+                :class="assistant.enabled ? 'bg-[#2563eb]' : 'bg-slate-200'"
+                @click="handleToggleEnable(assistant)"
+              >
+                <span
+                  class="inline-block h-4 w-4 transform rounded-full bg-white transition transition-transform"
+                  :class="assistant.enabled ? 'translate-x-6' : 'translate-x-1'"
+                />
               </div>
+            </div>
               
               <div class="flex items-center space-x-2 text-slate-400">
                 <button 
@@ -269,6 +370,18 @@ onMounted(() => {
               </div>
             </div>
             <div class="text-sm text-slate-400">当检测到对方通过了你的好友申请后，则自动发送话术组内容</div>
+            
+            <div v-if="autoGreeting" class="mt-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+              <div class="text-xs text-slate-500 mb-2 font-medium">选择话术组</div>
+              <Select
+                v-model:value="autoGreetingGroupId"
+                :options="scriptGroups"
+                placeholder="请选择话术组"
+                style="width: 100%"
+                class="text-sm"
+              />
+            </div>
+
             <div class="h-px bg-slate-100 w-full mt-4"></div>
           </div>
 
@@ -393,20 +506,20 @@ onMounted(() => {
                <div>
                  <div class="text-sm font-bold text-slate-700 mb-3">文件类型</div>
                  <div class="flex items-center space-x-6">
-                   <label class="flex items-center space-x-2 cursor-pointer">
-                     <input type="checkbox" v-model="fileTypes.word" class="w-4 h-4 text-[#2563eb] rounded border-slate-300 focus:ring-[#2563eb]">
+                   <label class="flex items-center space-x-2 cursor-pointer" :class="{ 'opacity-50 cursor-not-allowed': !identifyFile }">
+                     <input type="checkbox" v-model="fileTypes.word" :disabled="!identifyFile" class="w-4 h-4 text-[#2563eb] rounded border-slate-300 focus:ring-[#2563eb]">
                      <span class="text-sm text-slate-600">Word</span>
                    </label>
-                   <label class="flex items-center space-x-2 cursor-pointer">
-                     <input type="checkbox" v-model="fileTypes.pdf" class="w-4 h-4 text-[#2563eb] rounded border-slate-300 focus:ring-[#2563eb]">
+                   <label class="flex items-center space-x-2 cursor-pointer" :class="{ 'opacity-50 cursor-not-allowed': !identifyFile }">
+                     <input type="checkbox" v-model="fileTypes.pdf" :disabled="!identifyFile" class="w-4 h-4 text-[#2563eb] rounded border-slate-300 focus:ring-[#2563eb]">
                      <span class="text-sm text-slate-600 text-[#2563eb]">PDF</span>
                    </label>
-                   <label class="flex items-center space-x-2 cursor-pointer">
-                     <input type="checkbox" v-model="fileTypes.excel" class="w-4 h-4 text-[#2563eb] rounded border-slate-300 focus:ring-[#2563eb]">
+                   <label class="flex items-center space-x-2 cursor-pointer" :class="{ 'opacity-50 cursor-not-allowed': !identifyFile }">
+                     <input type="checkbox" v-model="fileTypes.excel" :disabled="!identifyFile" class="w-4 h-4 text-[#2563eb] rounded border-slate-300 focus:ring-[#2563eb]">
                      <span class="text-sm text-slate-600">Excel</span>
                    </label>
-                   <label class="flex items-center space-x-2 cursor-pointer">
-                     <input type="checkbox" v-model="fileTypes.image" class="w-4 h-4 text-[#2563eb] rounded border-slate-300 focus:ring-[#2563eb]">
+                   <label class="flex items-center space-x-2 cursor-pointer" :class="{ 'opacity-50 cursor-not-allowed': !identifyFile }">
+                     <input type="checkbox" v-model="fileTypes.image" :disabled="!identifyFile" class="w-4 h-4 text-[#2563eb] rounded border-slate-300 focus:ring-[#2563eb]">
                      <span class="text-sm text-slate-600 text-[#2563eb]">图片</span>
                    </label>
                  </div>
@@ -414,7 +527,7 @@ onMounted(() => {
 
                <div>
                  <div class="flex items-center space-x-2 mb-2">
-                   <span class="text-sm font-bold text-slate-700">文件目录</span>
+                   <span class="text-sm font-bold text-slate-700">文件目录 <span v-if="identifyFile" class="text-red-500">*</span></span>
                    <Tooltip>
                      <template #title>
                        示例：D:\ProgramData\tencent_cache\WeChat Files\ABC123，注意！！最后一个目录一定是当前登录的微信号
@@ -429,8 +542,9 @@ onMounted(() => {
                  </div>
                  <input 
                     v-model="fileDirectory"
+                    :disabled="!identifyFile"
                     type="text"
-                    class="w-full bg-white border border-[#2563eb] rounded px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#2563eb]"
+                    class="w-full bg-white border border-[#2563eb] rounded px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#2563eb] disabled:bg-slate-100 disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
                  />
                </div>
             </div>

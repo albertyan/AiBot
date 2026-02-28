@@ -25,4 +25,16 @@ export const getGroupCount = async () => {
   }
 };
 
-
+export const autoConfigureEnv = async () => {
+  const response = await fetch('/api/home/auto_configure_env', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('配置失败，请检查网络或后台服务');
+  }
+};

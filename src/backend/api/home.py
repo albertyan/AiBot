@@ -1,4 +1,8 @@
 import time
+import os
+import subprocess
+import asyncio
+import winreg
 from typing import Any
 from loguru import logger
 from fastapi import APIRouter, Depends
@@ -28,20 +32,26 @@ def init() -> Any:
 
 @home_router.get("/dashboard")
 async def get_dashboard_data(db: AsyncSession = Depends(get_db)) -> Any : 
-    # Get user info (Assuming single user or taking the first one for now)
-    main_window= NavigatorExt.open_weixin()
-    ToolsExt.cancel_pin(main_window)
-    time.sleep(0.5)
     # 检查微信是否运行
     is_running = ToolsExt.is_weixin_running()
     logger.info(f"微信是否运行中: {is_running}")
     if not is_running:
         logger.error("微信未运行，请先启动微信")
         return ResponseUtil.error("微信未运行，请先启动微信")
+        # Get user info (Assuming single user or taking the first one for now)
+    try:
+        main_window= NavigatorExt.open_weixin()
+        ToolsExt.cancel_pin(main_window)
+    except Exception as e:
+        logger.error(f"打开微信失败: {e}")
+        return ResponseUtil.error(f"打开微信失败: {e}")
+    
+    time.sleep(0.5)
     # 等待窗口出现
     if not main_window.exists(timeout=0.1):
         logger.error("未找到微信主窗口，请确保已登录并打开主界面")
         return ResponseUtil.error("未找到微信主窗口，请确保已登录并打开主界面")
+    
     # 恢复窗口状态（如果最小化）
     try:
         if main_window.get_show_state() == 2: # 2 代表最小化
@@ -129,3 +139,74 @@ async def get_groupCount(current_user: CurrentUserDep, db: AsyncSession = Depend
         msg="获取群数量成功",
         data=group_count
     )
+
+@home_router.post("/auto_configure_env")
+async def auto_configure_env() -> Any:
+    """
+    自动配置环境：
+    1. 退出微信
+    2. 设置windows当前用户环境变量QT_ACCESSIBILITY=1
+    3. 启动讲述人(触发Accessibility)
+    4. 重启微信
+    """
+    logger.info("Starting auto configuration for environment...")
+    
+    # 1. Kill WeChat
+    try:
+        # Use os.system which is more direct for command execution on Windows
+        # Redirect output to nul to suppress noise, but log the action
+        logger.info("Attempting to kill WeChat process...")
+        result = os.system("taskkill /F /IM Weixin.exe >nul 2>&1")
+        if result == 0:
+            logger.info("Killed WeChat process successfully")
+        else:
+            # If WeChat wasn't running, taskkill returns a non-zero exit code (usually 128)
+            # which is fine, but we log it just in case
+            logger.info(f"Taskkill returned code {result}, WeChat might not be running")
+    except Exception as e:
+        logger.warning(f"Failed to kill WeChat: {e}")
+
+    # 2. Set current user environment variable QT_ACCESSIBILITY=1
+    try:
+        # Check if already set
+        if os.environ.get("QT_ACCESSIBILITY") != "1":
+            # Set for current process and children
+            os.environ["QT_ACCESSIBILITY"] = "1"
+            # Set persistently for user (System Environment Variable)
+            subprocess.run(["setx", "QT_ACCESSIBILITY", "1"], capture_output=True)
+            logger.info("Set QT_ACCESSIBILITY=1 in environment variables")
+        else:
+            logger.info("QT_ACCESSIBILITY is already set to 1, skipping configuration.")
+    except Exception as e:
+        logger.warning(f"Failed to set environment variable: {e}")
+
+    # 3. Run Narrator for 10s
+    try:
+        logger.info("Starting Narrator...")
+        # Using Narrator.exe might require full path or just command
+        # On Windows, Narrator.exe is usually in System32
+        os.startfile("Narrator.exe")
+        await asyncio.sleep(10)
+        subprocess.run(["taskkill", "/F", "/IM", "Narrator.exe"], capture_output=True)
+        logger.info("Stopped Narrator")
+    except Exception as e:
+        logger.error(f"Error running Narrator: {e}")
+        return ResponseUtil.error(msg=f"启动讲述人失败: {e}")
+
+    # 4. Restart WeChat
+    wechat_path = None
+    try:
+        wechat_path = ToolsExt.where_weixin()
+    except Exception as e:
+        logger.warning(f"Failed to find WeChat path from registry: {e}")
+
+    if wechat_path and os.path.exists(wechat_path):
+        try:
+            logger.info(f"Starting WeChat from {wechat_path}")
+            subprocess.Popen([wechat_path])
+            return ResponseUtil.success(msg="环境配置完成，微信已重启")
+        except Exception as e:
+            logger.error(f"Failed to start WeChat: {e}")
+            return ResponseUtil.error(msg=f"重启微信失败: {e}")
+    else:
+        return ResponseUtil.success(msg="环境配置完成，请手动重启微信")

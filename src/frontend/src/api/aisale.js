@@ -33,3 +33,29 @@ export const deleteAiAgent = async (agentId) => {
     throw new Error('删除AI助理失败');
   }
 };
+
+export const updateEnableStatus = async (agentId, enabled) => {
+  const response = await fetch(`/api/aisale/update_enable_status?agent_id=${encodeURIComponent(agentId)}&enabled=${enabled}`, {
+    method: 'POST'
+  });
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('更新状态失败');
+  }
+};
+
+export const saveCommonConfig = async (config) => {
+  const response = await fetch('/api/aisale/save_common_config', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(config)
+  });
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('保存通用配置失败');
+  }
+};

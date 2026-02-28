@@ -11,4 +11,5 @@ async def main():
     check_base_dir()
 
 if __name__ == "__main__":
-    main()
+    print('=========================初始化开始...')
+    asyncio.run(main())

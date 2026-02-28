@@ -4,11 +4,13 @@ import { ref } from 'vue';
 import { message } from 'ant-design-vue';
 import { getDashboardData } from '../api/launch';
 import { useUserStore } from '../stores/user';
+import EnvConfigModal from '../components/EnvConfigModal.vue';
 
 const router = useRouter();
 const userStore = useUserStore();
 const isLoading = ref(false);
 const errorMessage = ref('');
+const showEnvConfig = ref(false);
 
 const handleLaunch = async () => {
   isLoading.value = true;
@@ -27,7 +29,13 @@ const handleLaunch = async () => {
     } else {
       const msg = data.msg || '启动失败';
       errorMessage.value = msg;
-      message.error(msg);
+
+      // If error suggests environment issue (not just "WeChat not running"), show config modal
+      if (msg.startsWith('打开微信失败')) {
+        showEnvConfig.value = true;
+      } else {
+        message.error(msg);
+      }
     }
   } catch (error) {
     console.error('Error launching app:', error);
@@ -37,6 +45,11 @@ const handleLaunch = async () => {
   } finally {
     isLoading.value = false;
   }
+};
+
+const handleConfigSuccess = () => {
+  // Auto retry launch after config success
+  handleLaunch();
 };
 </script>
 
@@ -131,5 +144,22 @@ const handleLaunch = async () => {
         </p>
       </div>
     </div>
+
+    <!-- Environment Configuration Modal -->
+    <EnvConfigModal 
+      v-model:open="showEnvConfig" 
+      @success="handleConfigSuccess" 
+    />
   </div>
 </template>
+
+<style scoped>
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+</style>
