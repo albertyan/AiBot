@@ -1,9 +1,10 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import NavBar from '../components/NavBar.vue';
 import AiConfigModal from '../components/AiConfigModal.vue';
 import DataStatisticsModal from '../components/DataStatisticsModal.vue';
 import LogModal from '../components/LogModal.vue';
+import { toggleMonitor, getMonitorStatus } from '../api/aisale';
 
 const autoReply = ref(false);
 const manualReview = ref(false);
@@ -12,6 +13,27 @@ const showDataStatisticsModal = ref(false);
 const showLogModal = ref(false);
 const activeTab = ref('recent');
 const messageInput = ref('');
+
+onMounted(async () => {
+  try {
+    const res = await getMonitorStatus();
+    if (res.code === 200) {
+      autoReply.value = res.data.enabled;
+    }
+  } catch (error) {
+    console.error('Failed to sync monitor status:', error);
+  }
+});
+
+const handleAutoReplyChange = async () => {
+  autoReply.value = !autoReply.value;
+  try {
+    await toggleMonitor(autoReply.value);
+  } catch (error) {
+    console.error(error);
+    autoReply.value = !autoReply.value;
+  }
+};
 
 // Mock Data matching the image
 const sessions = ref([
@@ -46,9 +68,9 @@ const currentSession = ref(sessions.value[0]);
         <!-- 自动回复开关 -->
         <div 
           class="flex items-center space-x-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1890FF] rounded-lg p-1" 
-          @click="autoReply = !autoReply"
-          @keydown.enter.prevent="autoReply = !autoReply"
-          @keydown.space.prevent="autoReply = !autoReply"
+          @click="handleAutoReplyChange"
+          @keydown.enter.prevent="handleAutoReplyChange"
+          @keydown.space.prevent="handleAutoReplyChange"
           role="switch"
           :aria-checked="autoReply"
           tabindex="0"

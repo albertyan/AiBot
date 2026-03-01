@@ -24,8 +24,12 @@ export const saveAiAgent = async (agent) => {
 };
 
 export const deleteAiAgent = async (agentId) => {
-  const response = await fetch(`/api/aisale/delete_agent?agent_id=${encodeURIComponent(agentId)}`, {
-    method: 'POST'
+  const response = await fetch('/api/aisale/delete_agent', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ agent_id: agentId })
   });
   if (response.ok) {
     return await response.json();
@@ -35,8 +39,12 @@ export const deleteAiAgent = async (agentId) => {
 };
 
 export const updateEnableStatus = async (agentId, enabled) => {
-  const response = await fetch(`/api/aisale/update_enable_status?agent_id=${encodeURIComponent(agentId)}&enabled=${enabled}`, {
-    method: 'POST'
+  const response = await fetch('/api/aisale/update_enable_status', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ agent_id: agentId, enabled: enabled })
   });
   if (response.ok) {
     return await response.json();
@@ -57,5 +65,29 @@ export const saveCommonConfig = async (config) => {
     return await response.json();
   } else {
     throw new Error('保存通用配置失败');
+  }
+};
+
+export const toggleMonitor = async (enabled) => {
+  const response = await fetch('/api/aisale/toggle_monitor', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ enabled })
+  });
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('切换监控状态失败');
+  }
+};
+
+export const getMonitorStatus = async () => {
+  const response = await fetch('/api/aisale/get_monitor_status');
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('获取监控状态失败');
   }
 };

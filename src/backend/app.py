@@ -65,6 +65,8 @@ static_dir = os.path.join(dist_dir, "assets")
 
 from contextlib import asynccontextmanager
 from scheduler import scheduler
+from adapter.message_adapter import message_adapter
+import asyncio
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -72,7 +74,16 @@ async def lifespan(app: FastAPI):
     async with scheduler:
         # Start the scheduler's internal processing loop in the background
         await scheduler.start_in_background()
+        
+        # 启动消息处理 worker
+        worker_task = asyncio.create_task(message_adapter.start_worker())
+        
         yield
+        
+        # 停止 worker
+        message_adapter.stop_worker()
+        # 等待 worker 停止
+        # await worker_task
 
 app = FastAPI(docs_url=None, lifespan=lifespan)
 

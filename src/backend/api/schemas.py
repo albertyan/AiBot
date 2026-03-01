@@ -48,3 +48,6 @@ class AgentId(BaseModel):
 class UpdateEnableStatus(BaseModel):
     agent_id: str
     enabled: bool
+
+class MonitorControl(BaseModel):
+    enabled: bool
