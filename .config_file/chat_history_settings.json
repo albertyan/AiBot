@@ -1,0 +1,18 @@
+{
+    "chat_history_settings": {
+        "autoSave": false,
+        "includeContext": false,
+        "contextCount": 5,
+        "includeUserInfo": false,
+        "messageMerge": {
+            "mode": "none",
+            "interval": 5
+        },
+        "transferConfig": {
+            "phrases": [
+                "aaa"
+            ],
+            "notifyWechat": "albert"
+        }
+    }
+}

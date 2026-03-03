@@ -91,3 +91,17 @@ export const getMonitorStatus = async () => {
     throw new Error('获取监控状态失败');
   }
 };
+
+export const refreshWeixinMessages = async () => {
+  const response = await fetch('/api/aisale/refresh_weixin_messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('刷新微信消息失败');
+  }
+};

@@ -1,15 +1,16 @@
-import json
-import os
-import time
 from fastapi import APIRouter, Depends
+from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
+from db.get_db import get_db
 
 from environment import CurrentUserDep
 from utils.response_util import ResponseUtil
-from utils.config_file import get_personal_dir
-from .schemas import CommonConfig, StaffAgent, AgentId, UpdateEnableStatus, MonitorControl
-from monitor.monitor import monitor
+from .schemas import CommonConfig, StaffAgent, AgentId, UpdateEnableStatus, MonitorControl, WeChatSession
 
-
+from service.ai_config_service import ai_config_service
+from service.monitor_service import monitor_service
+from service.wechat_service import wechat_service
+from service.groups_service import groups_service
 aisale_router = APIRouter()
 
 
@@ -20,69 +21,22 @@ async def get_ai_config(current_user: CurrentUserDep):
     获取AI配置
     配置文件示例 reply_stategy.json
     '''
-    # 判断 reply_stategy.json 是否存在
-    if not os.path.exists(os.path.join(get_personal_dir(current_user.wxNumber), "reply_stategy.json")):
-        return ResponseUtil.success(data={"config": {}})
-    
     try:
-        with open(os.path.join(get_personal_dir(current_user.wxNumber), "reply_stategy.json"), "r", encoding='utf-8') as f:
-            data = json.load(f)
-    except:
-        return ResponseUtil.error(msg="reply_stategy.json 格式错误")
-    
-    return ResponseUtil.success(data={"config": data})
+        data = ai_config_service.get_ai_config(current_user.wxNumber)
+        return ResponseUtil.success(data={"config": data})
+    except Exception as e:
+        return ResponseUtil.error(msg=str(e))
 
 @aisale_router.post("/save_agent")
 async def save_agent(current_user: CurrentUserDep, agent: StaffAgent):
     '''
     添加智能体
     '''
-    personal_dir = get_personal_dir(current_user.wxNumber)
-    file_path = os.path.join(personal_dir, "reply_stategy.json")
-
-    data = {"staffList": [], "commonConfig": {}}
-    if os.path.exists(file_path):
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                loaded = json.load(f)
-            if isinstance(loaded, dict):
-                data["staffList"] = loaded.get("staffList", []) if isinstance(loaded.get("staffList"), list) else []
-                data["commonConfig"] = loaded.get("commonConfig", {}) if isinstance(loaded.get("commonConfig"), dict) else {}
-        except Exception:
-            return ResponseUtil.error(msg="reply_stategy.json 格式错误")
-    
-    # Process the new/updated agent
-    agent_dict = agent.model_dump()
-    
-    # Generate ID if missing
-    if not agent_dict.get("id"):
-        agent_dict["id"] = str(int(time.time() * 1000))
-    else:
-        agent_dict["id"] = str(agent_dict["id"])
-
-    # Ensure other fields are strings where necessary
-    agent_dict["agentId"] = str(agent_dict["agentId"])
-    
-    staff_list = data.get("staffList", [])
-    
-    replaced = False
-    for idx, item in enumerate(staff_list):
-        if str(item.get("id")) == agent_dict["id"]:
-            staff_list[idx] = agent_dict
-            replaced = True
-            break
-            
-    if not replaced:
-        staff_list.append(agent_dict)
-
-    data["staffList"] = staff_list
     try:
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        staff_list = ai_config_service.save_agent(current_user.wxNumber, agent)
+        return ResponseUtil.success(data={"staffList": staff_list})
     except Exception as e:
-        return ResponseUtil.error(msg=f"保存失败: {e}")
-
-    return ResponseUtil.success(data={"staffList": staff_list})
+        return ResponseUtil.error(msg=str(e))
 
 
 @aisale_router.post("/delete_agent")
@@ -90,131 +44,97 @@ async def delete_agent(current_user: CurrentUserDep, data_in: AgentId):
     '''
     删除智能体
     '''
-    agent_id = data_in.agent_id
-    if not agent_id:
+    if not data_in.agent_id:
         return ResponseUtil.error(msg="智能体ID不能为空")
-
-    personal_dir = get_personal_dir(current_user.wxNumber)
-    file_path = os.path.join(personal_dir, "reply_stategy.json")
-
-    data = {"staffList": [], "commonConfig": {}}
-    if os.path.exists(file_path):
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                loaded = json.load(f)
-            if isinstance(loaded, dict):
-                data["staffList"] = loaded.get("staffList", []) if isinstance(loaded.get("staffList"), list) else []
-                data["commonConfig"] = loaded.get("commonConfig", {}) if isinstance(loaded.get("commonConfig"), dict) else {}
-        except Exception:
-            return ResponseUtil.error(msg="reply_stategy.json 格式错误")
-            
-    staff_list = data.get("staffList", [])
-    # Filter out the agent to delete
-    new_staff_list = [item for item in staff_list if str(item.get("id")) != str(agent_id)]
-    
-    data["staffList"] = new_staff_list
     
     try:
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        new_staff_list = ai_config_service.delete_agent(current_user.wxNumber, data_in.agent_id)
+        return ResponseUtil.success(data={"staffList": new_staff_list})
     except Exception as e:
-        return ResponseUtil.error(msg=f"删除失败: {e}")
-
-    return ResponseUtil.success(data={"staffList": new_staff_list})
+        return ResponseUtil.error(msg=str(e))
 
 @aisale_router.post("/save_common_config")
 async def save_common_config(current_user: CurrentUserDep, config: CommonConfig):
     '''
     保存通用配置
     '''
-    personal_dir = get_personal_dir(current_user.wxNumber)
-    file_path = os.path.join(personal_dir, "reply_stategy.json")
-
-    data = {"staffList": [], "commonConfig": {}}
-    if os.path.exists(file_path):
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                loaded = json.load(f)
-            if isinstance(loaded, dict):
-                data["staffList"] = loaded.get("staffList", []) if isinstance(loaded.get("staffList"), list) else []
-                data["commonConfig"] = loaded.get("commonConfig", {}) if isinstance(loaded.get("commonConfig"), dict) else {}
-        except Exception:
-            return ResponseUtil.error(msg="reply_stategy.json 格式错误")
-    
-    data["commonConfig"] = config.model_dump()
-    
     try:
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        common_config = ai_config_service.save_common_config(current_user.wxNumber, config)
+        return ResponseUtil.success(data={"commonConfig": common_config})
     except Exception as e:
-        return ResponseUtil.error(msg=f"保存失败: {e}")
-
-    return ResponseUtil.success(data={"commonConfig": data["commonConfig"]})
+        return ResponseUtil.error(msg=str(e))
 
 @aisale_router.post("/update_enable_status")
 async def update_enable_status(current_user: CurrentUserDep, status: UpdateEnableStatus):
     '''
     更新启用状态
     '''
-    personal_dir = get_personal_dir(current_user.wxNumber)
-    file_path = os.path.join(personal_dir, "reply_stategy.json")
-
-    data = {"staffList": [], "commonConfig": {}}
-    if os.path.exists(file_path):
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                loaded = json.load(f)
-            if isinstance(loaded, dict):
-                data["staffList"] = loaded.get("staffList", []) if isinstance(loaded.get("staffList"), list) else []
-                data["commonConfig"] = loaded.get("commonConfig", {}) if isinstance(loaded.get("commonConfig"), dict) else {}
-        except Exception:
-            return ResponseUtil.error(msg="reply_stategy.json 格式错误")
-    
-    staff_list = data.get("staffList", [])
-    found = False
-    for agent in staff_list:
-        if str(agent.get("id")) == str(status.agent_id):
-            agent["enabled"] = status.enabled
-            found = True
-            break
-            
-    if not found:
-        return ResponseUtil.error(msg="未找到指定智能体")
-        
     try:
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        ai_config_service.update_enable_status(current_user.wxNumber, status.agent_id, status.enabled)
+        return ResponseUtil.success()
     except Exception as e:
-        return ResponseUtil.error(msg=f"保存失败: {e}")
-
-    return ResponseUtil.success()
+        return ResponseUtil.error(msg=str(e))
 
 @aisale_router.post("/refresh_weixin_messages")
-async def refresh_weixin_messages(current_user: CurrentUserDep):
+async def refresh_weixin_messages(current_user: CurrentUserDep, db: AsyncSession = Depends(get_db)):
     '''
     刷新微信消息
+    Return:返回新消息列表
     '''
-    from auto.pyweixin.utils import scan_for_new_messages
-    newMessages_dict=scan_for_new_messages()
-    return ResponseUtil.success(data={"newMessages_dict": newMessages_dict})
+    try:
+        groups = await groups_service.get_all_groups(current_user.wxNumber, db)
+        group_names = [g.get('name') for g in groups]
+        sessions = wechat_service.get_new_messages(current_user.wxNumber)
+        for s in sessions:
+            if s.name in group_names:
+                s.is_group = True
+        return ResponseUtil.success(data={"sessions": [s.model_dump() for s in sessions]})
+    except Exception as e:
+        return ResponseUtil.error(msg=str(e))
+    
+async def get_wechat_sessions(session: WeChatSession, db: AsyncSession = Depends(get_db)):
+    '''
+    获取单个微信会话列表
+    '''
+    try:
+
+        group_names = [g.get('name') for g in groups]
+        logger.info(f"current_user.wxNumber: {current_user.wxNumber}")
+        sessions = wechat_service.get_new_messages(current_user.wxNumber)
+        for s in sessions:
+            if s.name in group_names:
+                s.is_group = True
+        return ResponseUtil.success(data={"sessions": [s.model_dump() for s in sessions]})
+    except Exception as e:
+        return ResponseUtil.error(msg=str(e))
+
 
 @aisale_router.post("/toggle_monitor")
 async def toggle_monitor(current_user: CurrentUserDep, data: MonitorControl):
     """
     开启或关闭微信消息监控
     """
-    if data.enabled:
-        monitor.start()
-        msg = "监控已启动"
-    else:
-        monitor.stop()
-        msg = "监控已停止"
-    
-    return ResponseUtil.success(msg=msg)
+    try:
+        if data.enabled:
+            monitor_service.start_monitor()
+            msg = "监控已启动"
+        else:
+            monitor_service.stop_monitor()
+            msg = "监控已停止"
+        
+        return ResponseUtil.success(msg=msg)
+    except Exception as e:
+        return ResponseUtil.error(msg=str(e))
 
 @aisale_router.get("/get_monitor_status")
 async def get_monitor_status(current_user: CurrentUserDep):
     """
     获取微信消息监控状态
     """
-    return ResponseUtil.success(data={"enabled": monitor.running})
+    try:
+        status = monitor_service.get_monitor_status()
+        return ResponseUtil.success(data={"enabled": status})
+    except Exception as e:
+        return ResponseUtil.error(msg=str(e))
+
+

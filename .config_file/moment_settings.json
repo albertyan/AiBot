@@ -1,0 +1,11 @@
+{
+    "moment_settings": {
+        "agentId": "1772009299855",
+        "commentLimit": 10,
+        "perFriendLimit": 3,
+        "autoLike": true,
+        "interactionMode": "like_only",
+        "blacklist": "",
+        "prompt": "请根据朋友圈的内容，生成一条友善、积极的评论。评论要自然、真诚，避免过于敷衍。如果朋友圈内容是图片，要根据图片内容来评论。"
+    }
+}

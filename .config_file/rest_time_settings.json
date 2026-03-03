@@ -1,0 +1,11 @@
+{
+    "rest_time_settings": {
+        "startTime": "06:30",
+        "endTime": "19:00",
+        "selectedTasks": [
+            "自动加好友",
+            "自动通过好友"
+        ],
+        "enabled": true
+    }
+}

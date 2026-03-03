@@ -2,7 +2,7 @@ import json
 import os
 from typing import Dict, List
 from loguru import logger
-from adapter.message_adapter import message_adapter
+from .message_adapter import message_adapter
 
 CONFIG_PATH = "/Volumes/work/treaWorkspace/AiBot/.config_file/reply_strategy_v2.json"
 

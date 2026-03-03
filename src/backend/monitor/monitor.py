@@ -4,7 +4,7 @@ from typing import Dict
 from loguru import logger
 from auto.pyweixin.utils import scan_for_new_messages
 from auto.pyweixin.WeChatTools import Navigator
-from manager.message_manager import message_manager
+from .message_manager import message_manager
 
 class WeChatMonitor:
     """

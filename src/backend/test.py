@@ -150,12 +150,15 @@ Timings.slow()
 #     print(group[0])
 #     print(group[1])
 
-from auto.pyweixin.utils import scan_for_new_messages,get_new_message_num
-
+# from auto.pyweixin.utils import scan_for_new_messages,get_new_message_num
+from auto.WeChatBot import scan_for_new_messages
+not_care={'session_item_服务号','session_item_公众号','session_item_QQ邮箱提醒','session_item_微信支付'}
 # print(MessagesExt.check_new_messages())
-print(scan_for_new_messages())
+# print(scan_for_new_messages(close_weixin=False))
 # print(get_new_message_num(close_weixin=False))
-
+# print(MessagesExt.dump_sessions())
+# print(MessagesExt.dump_recent_sessions('Today'))
+print(MessagesExt.dump_chat_history(friend='中智武婷婷',number=10,capture_alia=True))
 print("*" * 30)
 # print(ToolsExt.where_weixin())
 # FriendSettingsExt.change_remark('张建坤','张建坤1')
@@ -163,3 +166,6 @@ print("*" * 30)
 
 # from pyweixin.WeChatAuto import Messages
 # Messages.check_new_messages(search_pages=0)
+# from utils.common_util import get_machine_code
+# if __name__ == "__main__":
+#     print(get_machine_code())

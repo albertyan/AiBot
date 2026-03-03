@@ -1,0 +1,7 @@
+{
+    "alert_settings": {
+        "email": "albertym@qq.com",
+        "frequency": "immediate",
+        "enabled": true
+    }
+}

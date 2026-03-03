@@ -1,0 +1,40 @@
+{
+    "agents": [
+        {
+            "platform": "yuanbao",
+            "name": "fsdaf",
+            "botId": "fasdf",
+            "token": "sdfgasdf",
+            "apiKey": "",
+            "isDefault": false,
+            "id": "1770116794442"
+        },
+        {
+            "platform": "dify",
+            "name": "test",
+            "botId": "123",
+            "token": "",
+            "apiKey": "test",
+            "isDefault": true,
+            "id": "1772000568705"
+        },
+        {
+            "platform": "yuanbao",
+            "name": "ybtest",
+            "botId": "ybtest",
+            "token": "ybtest",
+            "apiKey": "",
+            "isDefault": false,
+            "id": "1772000581035"
+        },
+        {
+            "platform": "coze",
+            "name": "df",
+            "botId": "dfd",
+            "token": "",
+            "apiKey": "",
+            "isDefault": false,
+            "id": "1772009299855"
+        }
+    ]
+}

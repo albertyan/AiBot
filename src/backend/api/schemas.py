@@ -51,3 +51,14 @@ class UpdateEnableStatus(BaseModel):
 
 class MonitorControl(BaseModel):
     enabled: bool
+
+class WeChatSession(BaseModel):
+    id: str = ""
+    name: str
+    count: int = 0
+    last_message: str = ""
+    last_time: str = ""
+    is_top: bool = False
+    raw_content: str = ""
+    is_group: bool = False
+    source: str = ""

@@ -1,0 +1,28 @@
+{
+    "greeting_config": [
+        {
+            "name": "A组",
+            "greetings": [
+                {
+                    "type": "file",
+                    "content": "huashu.txt",
+                    "filePath": "data\\uploads\\greetings\\1770022528.txt"
+                },
+                {
+                    "type": "text",
+                    "content": "测试"
+                },
+                {
+                    "type": "text",
+                    "content": "dfafagdfgasdfasd"
+                },
+                {
+                    "type": "agent",
+                    "content": "test - 请按要求生成话术",
+                    "agentId": "1772000568705",
+                    "prompt": "请按要求生成话术"
+                }
+            ]
+        }
+    ]
+}

@@ -2,13 +2,17 @@ import io
 import os
 import pandas as pd
 import re
+import subprocess
+import hashlib
+import platform
+import uuid
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 from sqlalchemy.engine.row import Row
 from typing import Any, Dict, List, Literal, Union
-from src.backend.db.database import Base
+from db.database import Base
 from config.env import CachePathConfig
 
 
@@ -295,3 +299,70 @@ def get_filepath_from_url(url: str):
     filepath = os.path.join(CachePathConfig.PATH, task_path, task_id, file_name)
 
     return filepath
+
+
+def get_machine_code() -> str:
+    """
+    获取机器唯一码
+    基于: 主板UUID + CPU ID + 硬盘序列号 + MAC地址
+    只要硬件特征没有变化，唯一码也不会变化
+    """
+    machine_info = []
+    
+    # 1. 获取硬件信息 (Windows)
+    if platform.system() == "Windows":
+        try:
+            # Helper to run wmic command safely
+            def get_wmic_value(command):
+                try:
+                    #防止弹出 cmd 窗口
+                    startupinfo = subprocess.STARTUPINFO()
+                    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                    
+                    output = subprocess.check_output(
+                        command, 
+                        shell=True, 
+                        startupinfo=startupinfo
+                    ).decode(errors='ignore').strip()
+                    
+                    lines = [line.strip() for line in output.splitlines() if line.strip()]
+                    # wmic 输出通常第一行是标题，第二行是值
+                    if len(lines) > 1:
+                        return lines[1]
+                except Exception:
+                    pass
+                return ""
+
+            # 主板UUID (最稳定)
+            uuid_val = get_wmic_value("wmic csproduct get uuid")
+            if uuid_val: machine_info.append(uuid_val)
+
+            # CPU ID
+            cpu_val = get_wmic_value("wmic cpu get processorid")
+            if cpu_val: machine_info.append(cpu_val)
+            
+            # 硬盘序列号
+            disk_val = get_wmic_value("wmic diskdrive get serialnumber")
+            if disk_val: machine_info.append(disk_val)
+            
+        except Exception:
+            pass
+
+    # 2. 获取MAC地址 (作为补充)
+    try:
+        # uuid.getnode() 获取MAC地址
+        mac = uuid.getnode()
+        machine_info.append(str(mac))
+    except Exception:
+        pass
+
+    # 3. 兜底策略
+    if not machine_info:
+        # 极端情况，使用主机名
+        machine_info.append(platform.node())
+        
+    # 组合信息并生成MD5
+    full_info = "|".join(machine_info)
+    return hashlib.md5(full_info.encode('utf-8')).hexdigest()
+
+

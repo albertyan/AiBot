@@ -6,6 +6,7 @@
 import os
 import sys
 import logging
+import time
 from typing import Dict, Any
 
 # 设置 COM 线程模型为 STA (单线程单元)，pywinauto 需要此模式
@@ -13,7 +14,7 @@ from typing import Dict, Any
 sys.coinit_flags = 2
 
 from pydantic import BaseModel
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 import mimetypes
@@ -55,6 +56,8 @@ mimetypes.add_type("text/css", ".css")
 
 from router import router_manager
 from api import home_router, setting_router, custom_router, autosop_router, aisale_router
+from utils.log_util import logger
+from utils.perf_util import perf_enabled, perf_should_sample
 # import baseUtil
 
 # 前端文件目录
@@ -65,7 +68,7 @@ static_dir = os.path.join(dist_dir, "assets")
 
 from contextlib import asynccontextmanager
 from scheduler import scheduler
-from adapter.message_adapter import message_adapter
+from monitor.message_adapter import message_adapter
 import asyncio
 
 @asynccontextmanager
@@ -86,6 +89,29 @@ async def lifespan(app: FastAPI):
         # await worker_task
 
 app = FastAPI(docs_url=None, lifespan=lifespan)
+
+@app.middleware("http")
+async def perf_http_middleware(request: Request, call_next):
+    """
+    记录每个 HTTP 请求的端到端耗时
+    为什么加中间件：仅记录方法耗时容易漏掉路由匹配/序列化/依赖注入等开销，中间件能补齐接口整体耗时。
+    """
+    if not perf_enabled() or not perf_should_sample():
+        return await call_next(request)
+
+    start = time.perf_counter()
+    response = None
+    ok = True
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        ok = False
+        raise e
+    finally:
+        cost_ms = (time.perf_counter() - start) * 1000
+        status = getattr(response, "status_code", 500)
+        logger.debug(f"[perf] http {request.method} {request.url.path} cost={cost_ms:.2f}ms status={status} ok={ok}")
 
 # 注册路由
 app.include_router(router_manager.router)
