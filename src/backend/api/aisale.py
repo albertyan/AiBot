@@ -91,19 +91,16 @@ async def refresh_weixin_messages(current_user: CurrentUserDep, db: AsyncSession
         return ResponseUtil.success(data={"sessions": [s.model_dump() for s in sessions]})
     except Exception as e:
         return ResponseUtil.error(msg=str(e))
-    
-async def get_wechat_sessions(session: WeChatSession, db: AsyncSession = Depends(get_db)):
+
+@aisale_router.get("/pull_friend_messages")
+async def pull_friend_messages(current_user: CurrentUserDep, db: AsyncSession = Depends(get_db),is_group:bool=False, friend:str=""):
     '''
     获取单个微信会话列表
     '''
     try:
 
-        group_names = [g.get('name') for g in groups]
         logger.info(f"current_user.wxNumber: {current_user.wxNumber}")
-        sessions = wechat_service.get_new_messages(current_user.wxNumber)
-        for s in sessions:
-            if s.name in group_names:
-                s.is_group = True
+        sessions = wechat_service.pull_friend_messages(current_user.wxNumber, friend)
         return ResponseUtil.success(data={"sessions": [s.model_dump() for s in sessions]})
     except Exception as e:
         return ResponseUtil.error(msg=str(e))

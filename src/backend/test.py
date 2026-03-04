@@ -13,7 +13,7 @@ from pywinauto import Desktop
 # from pywechat.WechatAuto import get_groups_info,WechatSettings
 from pywinauto.timings import Timings
 
-
+from auto.WeChatBot import WeChatBot
 from auto.WeChatToolsExt import ToolsExt,NavigatorExt
 from auto.WeChatAutoExt import ContactsExt,MessagesExt, FriendSettingsExt
 from auto.UielementsExt import (Login_window,Main_window,SideBar,Independent_window,Buttons,Texts,Menus,TabItems,MenuItems,Edits,Windows,)
@@ -151,14 +151,15 @@ Timings.slow()
 #     print(group[1])
 
 # from auto.pyweixin.utils import scan_for_new_messages,get_new_message_num
-from auto.WeChatBot import scan_for_new_messages
+from auto.WeChatBot import WeChatBot
 not_care={'session_item_服务号','session_item_公众号','session_item_QQ邮箱提醒','session_item_微信支付'}
 # print(MessagesExt.check_new_messages())
 # print(scan_for_new_messages(close_weixin=False))
 # print(get_new_message_num(close_weixin=False))
 # print(MessagesExt.dump_sessions())
 # print(MessagesExt.dump_recent_sessions('Today'))
-print(MessagesExt.dump_chat_history(friend='中智武婷婷',number=10,capture_alia=True))
+# print(WeChatBot.scan_for_new_messages())李磊
+print(WeChatBot.pull_messages(friend='箭冠网络科技、京兆瓦肆',myname='albertyanm',number=10))
 print("*" * 30)
 # print(ToolsExt.where_weixin())
 # FriendSettingsExt.change_remark('张建坤','张建坤1')
@@ -169,3 +170,106 @@ print("*" * 30)
 # from utils.common_util import get_machine_code
 # if __name__ == "__main__":
 #     print(get_machine_code())
+
+
+
+
+# def get_message_sender(listitem:ListItemWrapper,chat_list_rect,friend:str)->str:
+#     '''
+#     判断消息发送者
+#     Args:
+#         listitem: 消息列表项
+#         chat_list_rect: 聊天列表的矩形区域
+#     Returns:
+#         'Self': 自己发送
+#         'Other': 他人发送
+#     '''
+#     try:
+#         item_rect = listitem.rectangle()
+#         item_center_x = item_rect.mid_point().x
+#         item_width = item_rect.width()
+        
+#         # 广度优先遍历寻找非满宽的内容元素
+#         queue = [listitem]
+#         content_rects = []
+        
+#         # 设置最大循环次数防止死循环
+#         loop_count = 0
+#         while queue and loop_count < 50:
+#             loop_count += 1
+#             curr = queue.pop(0)
+#             try:
+#                 children = curr.children()
+#             except Exception:
+#                 continue
+                
+#             for child in children:
+#                 try:
+#                     rect = child.rectangle()
+#                     # 放宽阈值到 0.95，排除满宽容器
+#                     if rect.width() < item_width * 0.95:
+#                         content_rects.append(rect)
+#                     else:
+#                         # 满宽组件，继续深入查找
+#                         queue.append(child)
+#                 except Exception:
+#                     continue
+            
+#             if len(content_rects) >= 2:
+#                 break
+        
+#         # 如果找到几何特征，使用几何判断
+#         if content_rects:
+#             print("2222222222222222222222222222222")
+#             avg_mid_x = sum(r.mid_point().x for r in content_rects) / len(content_rects)
+#             if avg_mid_x < item_center_x:
+#                 return friend
+#             else:
+#                 return 'albertyanm1'
+
+#         # 如果没有找到非满宽元素，尝试【颜色判断】
+#         try:
+#             # 截取 ListItem 区域 (left, top, width, height)
+#             region = (item_rect.left, item_rect.top, item_rect.width(), item_rect.height())
+#             # 确保区域有效
+#             if region[2] > 0 and region[3] > 0:
+#                 img = pyautogui.screenshot(region=region)
+#                 width, height = img.size
+#                 pixels = img.load()
+#                 mid_y = height // 2
+                
+#                 # 1. 从右向左扫描寻找绿色气泡 (自己)
+#                 # 微信绿色气泡典型值 (149, 236, 105)
+#                 for x in range(width - 10, width // 2, -5):
+#                     if x < width:
+#                         r, g, b = pixels[x, mid_y]
+#                         # 绿色判定：G 分量显著大于 R 和 B
+#                         if g > 180 and g > r + 20 and g > b + 20:
+#                             return 'albertyanm2'
+                            
+#                 # 2. 从左向右扫描寻找非背景色 (他人)
+#                 # 背景色通常为浅灰 (245, 245, 245) 或白色
+#                 for x in range(10, width // 2, 5):
+#                     if x < width:
+#                         r, g, b = pixels[x, mid_y]
+#                         # 如果不是背景色 (允许一定误差)
+#                         is_background = (r > 240 and g > 240 and b > 240)
+#                         if not is_background:
+#                             # 且不是绿色 (再次确认)
+#                             if not (g > 180 and g > r + 20 and g > b + 20):
+#                                 return friend
+#         except Exception as e:
+#             print(f"Color check error: {e}")
+#         print("3333333333333333333333")
+#         # 最后的回退策略：位置判断
+#         if chat_list_rect:
+#             if item_rect.mid_point().x < chat_list_rect.mid_point().x:
+#                 return friend
+#             else:
+#                 return 'albertyanm3'
+            
+#         return ''
+            
+#     except Exception:
+#         return ''
+    

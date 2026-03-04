@@ -10,7 +10,7 @@ from sqlalchemy import select, func
 from pywinauto import mouse
 from pywinauto.timings import Timings
 
-from auto.WeChatBot import scan_for_new_messages
+from auto.WeChatBot import WeChatBot
 from auto.WeChatToolsExt import ToolsExt, NavigatorExt
 from auto.UielementsExt import PopUpProfileWindow
 from api.schemas import WeChatSession
@@ -27,11 +27,18 @@ class WeChatService:
     def __init__(self):
         pass
 
+    def pull_friend_messages(self, wx_number: str, friend: str) -> List[WeChatSession]:
+        """
+        拉取微信会话内容列表
+        """
+        messages = WeChatBot.pull_messages(friend=friend, myname=wx_number, number=10)
+        return messages
+
     def get_new_messages(self, wx_number: str) -> List[WeChatSession]:
         """
         扫描微信新消息并解析
         """
-        newMessages_list = scan_for_new_messages()
+        newMessages_list = WeChatBot.scan_for_new_messages()
         # newMessages_list is [{'sender': 'raw_string'}, ...]
         
         sessions = []
