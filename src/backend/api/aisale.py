@@ -11,6 +11,7 @@ from service.ai_config_service import ai_config_service
 from service.monitor_service import monitor_service
 from service.wechat_service import wechat_service
 from service.groups_service import groups_service
+
 aisale_router = APIRouter()
 
 
@@ -101,7 +102,7 @@ async def pull_friend_messages(current_user: CurrentUserDep, db: AsyncSession = 
 
         logger.info(f"current_user.wxNumber: {current_user.wxNumber}")
         sessions = wechat_service.pull_friend_messages(current_user.wxNumber, friend)
-        return ResponseUtil.success(data={"sessions": [s.model_dump() for s in sessions]})
+        return ResponseUtil.success(data={"sessions": sessions})
     except Exception as e:
         return ResponseUtil.error(msg=str(e))
 

@@ -12,6 +12,9 @@ from environment import env, EnvMode
 import importlib.util
 from config.env import *
 from utils.response_util import ResponseUtil
+import asyncio
+from typing import Any, Set
+from websocket.ws_manager import ws_manager
 
 router = APIRouter()
 
@@ -23,6 +26,8 @@ router = APIRouter()
 BASE_DIR = os.path.abspath(os.getcwd())
 
 dist_dir = os.path.join(BASE_DIR, "dist", "gui")
+
+ 
 
 @router.get("/", response_class=HTMLResponse)
 def hello():
@@ -49,6 +54,22 @@ async def websocket_root(websocket: WebSocket):
     except (WebSocketDisconnect, Exception):
         pass
     
+@router.websocket("/ws/messages")
+async def websocket_messages(websocket: WebSocket):
+    """
+    消息推送专用 WebSocket
+    为什么单独路由：避免与根路径冲突，并为前端提供清晰的订阅入口。
+    """
+    await ws_manager.connect(websocket)
+    try:
+        while True:
+            # 简单心跳：客户端如发送任意文本即可保持连接
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        await ws_manager.disconnect(websocket)
+    except Exception:
+        await ws_manager.disconnect(websocket)
+
 @router.get("/favicon.ico", include_in_schema = False)
 async def favicon():
     file_path = os.path.join(dist_dir, "favicon.ico")

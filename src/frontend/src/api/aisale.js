@@ -105,3 +105,13 @@ export const refreshWeixinMessages = async () => {
     throw new Error('刷新微信消息失败');
   }
 };
+
+export const pullFriendMessages = async (friend, isGroup = false) => {
+  const url = `/api/aisale/pull_friend_messages?is_group=${isGroup ? 'true' : 'false'}&friend=${encodeURIComponent(friend || '')}`;
+  const response = await fetch(url);
+  if (response.ok) {
+    return await response.json();
+  } else {
+    throw new Error('获取会话消息失败');
+  }
+};

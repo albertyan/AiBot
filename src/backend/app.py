@@ -70,6 +70,7 @@ from contextlib import asynccontextmanager
 from scheduler import scheduler
 from monitor.message_adapter import message_adapter
 import asyncio
+from websocket.ws_manager import ws_manager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -80,6 +81,8 @@ async def lifespan(app: FastAPI):
         
         # 启动消息处理 worker
         worker_task = asyncio.create_task(message_adapter.start_worker())
+        # 记录事件循环到 WS 管理器，便于后台线程安全广播
+        ws_manager.set_loop(asyncio.get_running_loop())
         
         yield
         

@@ -1,7 +1,10 @@
 import uuid
 import asyncio
+from datetime import datetime, timezone
 from queue import Queue, Empty
 from loguru import logger
+from apscheduler.triggers.date import DateTrigger
+from apscheduler import ConflictPolicy
 from scheduler.scheduler_service import get_scheduler
 
 class MessageAdapter:
@@ -42,6 +45,7 @@ class MessageAdapter:
     async def start_worker(self):
         """
         启动后台工作协程，从队列中取出任务并提交给调度器
+        为什么使用 DateTrigger：一次性任务应当立即执行或在指定时间点执行，APS v4 需要显式传入 trigger
         """
         self.running = True
         logger.info("MessageAdapter worker started.")
@@ -57,11 +61,14 @@ class MessageAdapter:
                     job_id = f"msg_process_{sender}_{uuid.uuid4()}"
                     logger.info(f"Submitting job {job_id} to scheduler")
                     
-                    # 提交一次性任务
+                    # 提交一次性任务：立刻执行（UTC 当前时间）
+                    trigger = DateTrigger(run_date=datetime.now(timezone.utc))
                     await self.scheduler.add_schedule(
                         self.process_message_job,
+                        trigger,
                         args=[sender, content, config],
-                        id=job_id
+                        id=job_id,
+                        conflict_policy=ConflictPolicy.replace  # 若ID冲突则替换，避免重复提交报错
                     )
                     
                 except Empty:

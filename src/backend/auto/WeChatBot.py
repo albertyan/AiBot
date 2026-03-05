@@ -96,7 +96,7 @@ class WeChatBot:
                                 r, g, b = pixels[x, mid_y]
                                 # 绿色判定：G 分量显著大于 R 和 B
                                 if g > 180 and g > r + 20 and g > b + 20:
-                                    return myname
+                                    return 'Self'
                                     
                         # 2. 从左向右扫描寻找非背景色 (他人)
                         # 背景色通常为浅灰 (245, 245, 245) 或白色

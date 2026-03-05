@@ -2,8 +2,7 @@ import time
 import threading
 from typing import Dict
 from loguru import logger
-from auto.pyweixin.utils import scan_for_new_messages
-from auto.pyweixin.WeChatTools import Navigator
+from auto.WeChatBot import WeChatBot
 from .message_manager import message_manager
 
 class WeChatMonitor:
@@ -55,7 +54,7 @@ class WeChatMonitor:
                 
                 # 获取主窗口对象，避免每次重新查找（但这取决于scan_for_new_messages内部是否使用了缓存）
                 # scan_for_new_messages 内部如果 main_window 为 None 会自动打开
-                new_messages = scan_for_new_messages(close_weixin=False)
+                new_messages = WeChatBot.scan_for_new_messages(close_weixin=False)
                 
                 if new_messages:
                     logger.info(f"New messages found: {new_messages}")

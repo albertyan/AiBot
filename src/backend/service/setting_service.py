@@ -8,30 +8,40 @@ from typing import Dict, Any, List
 from loguru import logger
 from utils.config_file import get_base_dir
 from utils.perf_util import instrument_class
+from config_store.coze_settings_config import CozeSettingsStore, CozeSettings
+from config_store.dify_settings_config import DifySettingsStore, DifySettings
+from config_store.agents_config import AgentsConfigStore, Agent
+from config_store.greeting_config_config import GreetingConfigStore, GreetingConfig, GreetingGroup, GreetingItem
+from config_store.moment_settings_config import MomentSettingsStore, MomentSettings, MomentSettingsWrapper
+from config_store.chat_history_settings_config import ChatHistorySettingsStore, ChatHistorySettings, ChatHistorySettingsWrapper
+from config_store.alert_settings_config import AlertSettingsStore, AlertSettings, AlertSettingsWrapper
+from config_store.rest_time_settings_config import RestTimeSettingsStore, RestTimeSettings, RestTimeSettingsWrapper
 
 class SettingService:
     def __init__(self):
-        pass
+        # 为什么在服务层聚合Store：统一对外接口，隐藏具体存储实现，便于后续替换（如DB/远程配置）
+        self._coze = CozeSettingsStore()
+        self._dify = DifySettingsStore()
+        self._agents = AgentsConfigStore()
+        self._greeting = GreetingConfigStore()
+        self._moment = MomentSettingsStore()
+        self._chat_history = ChatHistorySettingsStore()
+        self._alert = AlertSettingsStore()
+        self._rest_time = RestTimeSettingsStore()
 
     def get_coze_settings(self) -> Dict[str, Any]:
         """
         获取 Coze 的 token 以及最后更新时间
         """
-        if not os.path.exists(os.path.join(get_base_dir(), "coze_settings.json")):
-            return {"token": "", "last_update_time": ""}
-        
         try:
-            with open(os.path.join(get_base_dir(), "coze_settings.json"), "r", encoding='utf-8') as f:
-                data = json.load(f)
-            
-            last_update_time = data.get("last_update_time")
-            # 计算last_update_time 距离当前时间的天数
-            last_update_time_seconds = time.mktime(time.strptime(last_update_time, "%Y-%m-%d %H:%M:%S"))
+            data = self._coze.load()
+            if not data.last_update_time:
+                return {"token": data.token, "last_update_time": ""}
+            last_update_time_seconds = time.mktime(time.strptime(data.last_update_time, "%Y-%m-%d %H:%M:%S"))
             current_time_seconds = time.time()
             seconds_since_last_update = current_time_seconds - last_update_time_seconds
-            # 转换为天数, 向上取整
             days_since_last_update = math.ceil(seconds_since_last_update / (24 * 60 * 60))
-            return {"token": data.get("token"), "last_update_time": days_since_last_update}
+            return {"token": data.token, "last_update_time": days_since_last_update}
         except Exception as e:
             logger.error(f"Error loading coze settings: {e}")
             return {"token": "", "last_update_time": ""}
@@ -41,50 +51,32 @@ class SettingService:
         保存 Coze 的 token
         """
         last_update_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        result = {"token": settings.get("token"), "last_update_time": last_update_time}
-        
-        # 写入配置文件  
-        with open(os.path.join(get_base_dir(), "coze_settings.json"), "w", encoding='utf-8') as f:
-            json.dump(result, f, indent=4)
-            
-        return result
+        payload = CozeSettings(token=str(settings.get("token", "")), last_update_time=last_update_time)
+        self._coze.save(payload)
+        return {"token": payload.token, "last_update_time": payload.last_update_time}
 
     def get_dify_settings(self) -> Dict[str, Any]:
         """
         获取 Dify 的地址
         """
-        if not os.path.exists(os.path.join(get_base_dir(), "dify_settings.json")):
-            return {"baseUrl": ""}
-        try:
-            with open(os.path.join(get_base_dir(), "dify_settings.json"), "r", encoding='utf-8') as f:
-                data = json.load(f)
-            return {"baseUrl": data.get("baseUrl")}
-        except Exception:
-            raise ValueError("dify_settings.json 格式错误")
+        data = self._dify.load()
+        return {"baseUrl": data.baseUrl}
 
     def save_dify_settings(self, baseUrl: str) -> Dict[str, Any]:
         """
         设置 Dify 的地址
         """
-        result = {"baseUrl": baseUrl}
-        # 写入配置文件  
-        with open(os.path.join(get_base_dir(), "dify_settings.json"), "w", encoding='utf-8') as f:
-            json.dump(result, f, indent=4)
-        return result
+        model = DifySettings(baseUrl=str(baseUrl))
+        self._dify.save(model)
+        return {"baseUrl": model.baseUrl}
 
     def get_all_agents(self) -> List[Dict[str, Any]]:
         """
         获取所有智能体
         """
-        if not os.path.exists(os.path.join(get_base_dir(), "agents.json")):
-            return []
-        
-        try:
-            with open(os.path.join(get_base_dir(), "agents.json"), "r", encoding='utf-8') as f:
-                data = json.load(f)
-            return data.get("agents", [])
-        except Exception:
-            raise ValueError("agents.json 格式错误")
+        cfg = self._agents.view()
+        # 返回原始字典列表以兼容现有API
+        return [a.model_dump() for a in cfg.agents]
 
     def add_agent(self, agent: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -94,53 +86,29 @@ class SettingService:
             raise ValueError("智能体名称不能为空")
         if not agent.get("platform"):
             raise ValueError("平台类型不能为空")
-
-        json_path = os.path.join(get_base_dir(), "agents.json")
-        data = {"agents": []}
-        if os.path.exists(json_path):
-            try:
-                with open(json_path, "r", encoding='utf-8') as f:
-                    data = json.load(f)
-            except:
-                pass 
-        
-        agents = data.get("agents", [])
-        
-        # 生成 ID
         new_id = str(int(time.time() * 1000))
-        agent["id"] = new_id
-        
-        # 处理默认值逻辑
-        if agent.get("isDefault"):
-            for a in agents:
-                a["isDefault"] = False
-                
-        agents.append(agent)
-        
-        with open(json_path, "w", encoding='utf-8') as f:
-            json.dump({"agents": agents}, f, indent=4, ensure_ascii=False)
-            
-        return agent
+        model = Agent(
+            platform=str(agent.get("platform", "")),
+            name=str(agent.get("name", "")),
+            botId=str(agent.get("botId", "")),
+            token=str(agent.get("token", "")),
+            apiKey=str(agent.get("apiKey", "")),
+            isDefault=bool(agent.get("isDefault", False)),
+            id=new_id
+        )
+        cfg = self._agents.add_agent(model)
+        # 如果设置为默认，同步重置其他项
+        if model.isDefault:
+            self._agents.set_default(new_id)
+        return model.model_dump()
 
     def save_agent(self, agent: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         保存智能体
         """
-        if not os.path.exists(os.path.join(get_base_dir(), "agents.json")):
-            return []
-        
-        try:
-            with open(os.path.join(get_base_dir(), "agents.json"), "r", encoding='utf-8') as f:
-                data = json.load(f)
-        except:
-            raise ValueError("agents.json 格式错误")
-        
-        agents = data.get("agents", [])
-        agents.append(agent)
-        
-        with open(os.path.join(get_base_dir(), "agents.json"), "w", encoding='utf-8') as f:
-            json.dump({"agents": agents}, f, indent=4)
-        return agents
+        # 兼容旧接口：视为新增
+        created = self.add_agent(agent)
+        return self.get_all_agents()
 
     def set_default_agent(self, agent_id: str):
         """
@@ -148,33 +116,7 @@ class SettingService:
         """
         if not agent_id:
             raise ValueError("智能体ID不能为空")
-        
-        json_path = os.path.join(get_base_dir(), "agents.json")
-        if not os.path.exists(json_path):
-            raise ValueError("配置文件不存在")
-        
-        try:
-            with open(json_path, "r", encoding='utf-8') as f:
-                data = json.load(f)
-        except:
-            raise ValueError("agents.json 格式错误")
-        
-        agents = data.get("agents", [])
-        found = False
-        
-        for agent in agents:
-            if agent.get("id") == agent_id:
-                found = True
-                break
-                
-        if not found:
-            raise ValueError("智能体不存在")
-
-        for agent in agents:
-            agent["isDefault"] = (agent.get("id") == agent_id)
-        
-        with open(json_path, "w", encoding='utf-8') as f:
-            json.dump({"agents": agents}, f, indent=4, ensure_ascii=False)
+        self._agents.set_default(agent_id)
 
     def delete_agent(self, agent_id: str):
         """
@@ -182,25 +124,8 @@ class SettingService:
         """
         if not agent_id:
             raise ValueError("智能体ID不能为空")
-        
-        json_path = os.path.join(get_base_dir(), "agents.json")
-        if not os.path.exists(json_path):
-            return 
-            
         try:
-            with open(json_path, "r", encoding='utf-8') as f:
-                data = json.load(f)
-                
-            agents = data.get("agents", [])
-            original_count = len(agents)
-            new_agents = [agent for agent in agents if agent.get("id") != agent_id]
-            
-            if len(new_agents) == original_count:
-                return # 没有找到并删除
-                
-            data["agents"] = new_agents
-            with open(json_path, "w", encoding='utf-8') as f:
-                json.dump(data, f, indent=4, ensure_ascii=False)
+            self._agents.remove_agent(agent_id)
         except Exception as e:
             logger.error(f"Error deleting agent: {e}")
             raise e
@@ -209,127 +134,78 @@ class SettingService:
         """
         获取话术组配置
         """
-        file_path = os.path.join(get_base_dir(), "greeting_config.json")
-        if not os.path.exists(file_path):
-            raise ValueError("greeting_config.json not found")
-
-        try:
-            with open(file_path, "r", encoding='utf-8') as f:
-                data = json.load(f)
-            
-            config = data.get("greeting_config")
-            
-            if isinstance(config, dict) and "greeting_config" in config:
-                config = config["greeting_config"]
-                
-            if not isinstance(config, list):
-                config = []
-                
-            return config
-        except Exception as e:
-            logger.error(f"Error loading greeting config: {e}")
-            raise ValueError("Failed to load greeting config")
+        cfg = self._greeting.view()
+        # 与旧接口兼容，返回列表
+        groups = cfg.greeting_config
+        return [g.model_dump() for g in groups]
 
     def save_greeting_config(self, config: Dict[str, Any]):
         """
         保存话术组配置
         """
-        with open(os.path.join(get_base_dir(), "greeting_config.json"), "w", encoding='utf-8') as f:
-            json.dump(config, f, indent=4, ensure_ascii=False)
+        # 兼容旧接口：直接落盘完整结构
+        try:
+            model = GreetingConfig(**config)
+            self._greeting.save(model)
+        except Exception:
+            # 如果字段层级是裸列表（历史版本），做一次兼容转换
+            self._greeting.save(GreetingConfig(greeting_config=[GreetingGroup(**g) for g in (config or [])]))
 
     def get_moment_settings(self) -> Dict[str, Any]:
         """
         获取朋友圈评论配置
         """
-        file_path = os.path.join(get_base_dir(), "moment_settings.json")
-        if not os.path.exists(file_path):
-            return {
-                "moment_settings": {
-                    "commentLimit": 10,
-                    "perFriendLimit": 2,
-                    "autoLike": False,
-                    "interactionMode": "like_and_comment",
-                    "blacklist": "",
-                    "prompt": "请根据朋友圈的内容，生成一条友善、积极的评论。评论要自然、真诚，避免过于敷衍。如果朋友圈内容是图片，要根据图片内容来评论。",
-                    "agentId": ""
-                }
-            }
-        
-        try:
-            with open(file_path, "r", encoding='utf-8') as f:
-                return json.load(f)
-        except Exception as e:
-            logger.error(f"Error loading moment settings: {e}")
-            raise ValueError("配置文件格式错误")
+        settings = self._moment.load()
+        # 保持与旧接口一致的包裹结构
+        data = settings.model_dump()
+        return {"moment_settings": data}
 
     def save_moment_settings(self, config: Dict[str, Any]):
         """
         保存朋友圈评论配置
         """
-        with open(os.path.join(get_base_dir(), "moment_settings.json"), "w", encoding='utf-8') as f:
-            json.dump(config, f, indent=4, ensure_ascii=False)
+        try:
+            wrapped = MomentSettingsWrapper(**config)
+            self._moment.save(wrapped.moment_settings)
+        except Exception:
+            # 兼容直接传 MomentSettings 结构
+            self._moment.save(MomentSettings(**config))
 
     def get_chat_history_settings(self) -> Dict[str, Any]:
         """
         获取AI回复配置
         """
-        file_path = os.path.join(get_base_dir(), "chat_history_settings.json")
-        if not os.path.exists(file_path):
-            return {
-                "chat_history_settings": {
-                    "autoSave": False,
-                    "includeContext": True,
-                    "contextCount": 7,
-                    "includeUserInfo": False,
-                    "messageMerge": {
-                        "mode": "concat",
-                        "interval": 5
-                    },
-                    "transferConfig": {
-                        "phrases": [],
-                        "notifyWechat": ""
-                    }
-                }
-            }
-        try:
-            with open(file_path, "r", encoding='utf-8') as f:
-                return json.load(f)
-        except Exception as e:
-            logger.error(f"Error loading chat history settings: {e}")
-            raise ValueError("配置文件格式错误")
+        settings = self._chat_history.load()
+        data = settings.model_dump()
+        return {"chat_history_settings": data}
 
     def save_chat_history_settings(self, config: Dict[str, Any]):
         """
         保存AI回复配置
         """
-        with open(os.path.join(get_base_dir(), "chat_history_settings.json"), "w", encoding='utf-8') as f:
-            json.dump(config, f, indent=4, ensure_ascii=False)
+        try:
+            wrapped = ChatHistorySettingsWrapper(**config)
+            self._chat_history.save(wrapped.chat_history_settings)
+        except Exception:
+            self._chat_history.save(ChatHistorySettings(**config))
 
     def get_alert_settings(self) -> Dict[str, Any]:
         """
         获取预警配置
         """
-        file_path = os.path.join(get_base_dir(), "alert_settings.json")
-        if not os.path.exists(file_path):
-            return {
-                "alert_settings": {
-                    "email": "albertyan@outlook.com",
-                    "frequency": "daily"
-                }
-            }
-        try:
-            with open(file_path, "r", encoding='utf-8') as f:
-                return json.load(f)
-        except Exception as e:
-            logger.error(f"Error loading alert settings: {e}")
-            raise ValueError("配置文件格式错误")
+        settings = self._alert.load()
+        data = settings.model_dump()
+        return {"alert_settings": data}
 
     def save_alert_settings(self, config: Dict[str, Any]):
         """
         保存预警配置
         """
-        with open(os.path.join(get_base_dir(), "alert_settings.json"), "w", encoding='utf-8') as f:
-            json.dump(config, f, indent=4, ensure_ascii=False)
+        try:
+            wrapped = AlertSettingsWrapper(**config)
+            self._alert.save(wrapped.alert_settings)
+        except Exception:
+            self._alert.save(AlertSettings(**config))
 
     def send_test_alert_email(self, email: str):
         """
@@ -352,31 +228,19 @@ class SettingService:
         """
         获取休息时间配置
         """
-        file_path = os.path.join(get_base_dir(), "rest_time_settings.json")
-        if not os.path.exists(file_path):
-            return {
-                "rest_time_settings": {
-                    "startTime": 20,
-                    "endTime": 8,
-                    "selectedTasks": [
-                    "自动通过好友",
-                    "自动加好友"
-                    ]
-                }
-            }
-        try:
-            with open(file_path, "r", encoding='utf-8') as f:
-                return json.load(f)
-        except Exception as e:
-            logger.error(f"Error loading rest time settings: {e}")
-            raise ValueError("配置文件格式错误")
+        settings = self._rest_time.load()
+        data = settings.model_dump()
+        return {"rest_time_settings": data}
 
     def save_rest_time_settings(self, config: Dict[str, Any]):
         """
         保存休息时间配置
         """
-        with open(os.path.join(get_base_dir(), "rest_time_settings.json"), "w", encoding='utf-8') as f:
-            json.dump(config, f, indent=4, ensure_ascii=False)
+        try:
+            wrapped = RestTimeSettingsWrapper(**config)
+            self._rest_time.save(wrapped.rest_time_settings)
+        except Exception:
+            self._rest_time.save(RestTimeSettings(**config))
 
 SettingService = instrument_class(SettingService, prefix="service.SettingService")
 setting_service = SettingService()
