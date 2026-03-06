@@ -100,6 +100,10 @@ class MessageManager:
             KeywordFilter(),
         ]
         self.parser: BaseMessageParser = SimpleWeChatParser()
+        # 增量去重状态：记录每个 sender 最近一次扫描的“未读条数”或内容指纹
+        # 为什么使用去重：微信侧每轮扫描返回的是快照，若不做比对会重复处理相同消息；通过“未读条数/指纹”只处理增量，避免重复回复/广播
+        self._last_state: Dict[str, Dict[str, int | str]] = {}
+        self._count_re = re.compile(r"\[(\d+)条\]")
 
     def load_config(self):
         """加载配置文件"""
@@ -114,19 +118,87 @@ class MessageManager:
         except Exception as e:
             logger.error(f"Failed to load config: {e}")
 
-    def handle_messages(self, new_messages: Dict[str, str]):
+    def handle_messages(self, new_messages):
         """
         处理新消息
         为什么在此处编排：集中调用过滤策略与解析模板，便于统一维护与调试
         Args:
-            new_messages: {sender_name: message_text_or_count}
+            new_messages
         """
         # 每次处理前重新加载配置，以便实时生效（或者可以通过监听文件变化来优化）
         self.load_config()
         common_config = self.config.get("commonConfig", {}) or {}
 
-        parsed_items = []
-        for sender, content in new_messages.items():
+        # 统一输入结构：支持 Dict[str,str] / List[Dict[str,str]] / List[WeChatSession]
+        records: List[tuple[str, str, int | None, object | None]] = []
+        if isinstance(new_messages, dict):
+            for k, v in new_messages.items():
+                records.append((str(k), str(v), None, None))
+        elif isinstance(new_messages, list):
+            for item in new_messages:
+                if isinstance(item, dict):
+                    for k, v in item.items():
+                        records.append((str(k), str(v), None, None))
+                    continue
+                sender = getattr(item, "name", None)
+                raw_content = getattr(item, "raw_content", None)
+                if sender is None or raw_content is None:
+                    continue
+                count_val = getattr(item, "count", None)
+                try:
+                    count_val = int(count_val) if count_val is not None else None
+                except Exception:
+                    count_val = None
+                records.append((str(sender), str(raw_content), count_val, item))
+        else:
+            return
+
+        ws_sessions = []
+        for sender, content, count, session_obj in records:
+            # 增量判定：优先使用“[N条]”提取未读计数；若缺失则退化为内容指纹
+            delta = 0
+            if count is None:
+                try:
+                    m = self._count_re.search(content or "")
+                    if m:
+                        count = int(m.group(1))
+                except Exception:
+                    count = None
+
+            last = self._last_state.get(sender, {})
+            if count is not None:
+                # 通过未读计数计算本次增量
+                last_count = int(last.get("count", 0))
+                if count > last_count:
+                    delta = count - last_count
+                else:
+                    # 计数不增加：视为无增量（可能是已读或快照重复）
+                    delta = 0
+                # 更新计数快照
+                self._last_state[sender] = {"count": count}
+            else:
+                # 无计数信息，退化为内容指纹（简单可靠）
+                fingerprint = (content or "").strip()
+                last_fp = str(last.get("fp", ""))
+                if fingerprint and fingerprint != last_fp:
+                    delta = 1
+                else:
+                    delta = 0
+                # 更新指纹快照
+                self._last_state[sender] = {"fp": fingerprint}
+
+            # 无增量则跳过
+            if delta <= 0:
+                logger.debug(f"Skip duplicate or non-increment message: sender={sender}")
+                continue
+
+            # WebSocket 推送侧只关心“会话快照”，与 refresh_weixin_messages 的 sessions 结构保持一致
+            if session_obj is not None and hasattr(session_obj, "model_dump"):
+                try:
+                    ws_sessions.append(session_obj.model_dump())
+                except Exception:
+                    pass
+
             # 1. 按策略链过滤
             allowed = True
             for f in self.filters:
@@ -137,20 +209,17 @@ class MessageManager:
             if not allowed:
                 continue
 
-            # 2. 解析为统一结构（模板方法）
-            parsed = self.parser.parse(sender, content)
-            parsed_items.append(parsed)
-
             # 3. 提交给业务适配器处理（如自动回复、记录等）
-            logger.info(f"Processing message from {sender}")
+            # 为什么仍按“每个 sender 一次 job”提交：WeChat 快照无法携带每条消息文本，业务上通常按会话触发处理，delta 可作为强度参数
+            logger.info(f"Processing message from {sender}, delta={delta}")
             message_adapter.add_job(sender, content, self.config)
 
-        # 4. 通过 WebSocket 广播给前端（只广播通过过滤并解析完成的消息）
-        if parsed_items:
+        # 4. 通过 WebSocket 广播给前端（数据结构对齐 refresh_weixin_messages）
+        if ws_sessions:
             try:
                 ws_manager.broadcast_threadsafe({
-                    "type": "new_messages",
-                    "items": parsed_items
+                    "type": "refresh_weixin_messages",
+                    "data": {"sessions": ws_sessions}
                 })
             except Exception as e:
                 logger.error(f"WS broadcast failed: {e}")

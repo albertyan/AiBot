@@ -1,11 +1,32 @@
 import uuid
 import asyncio
 from datetime import datetime, timezone
+import inspect
 from queue import Queue, Empty
 from loguru import logger
 from apscheduler.triggers.date import DateTrigger
 from apscheduler import ConflictPolicy
 from scheduler.scheduler_service import get_scheduler
+
+def _create_date_trigger(run_at: datetime) -> DateTrigger:
+    """
+    创建一次性 DateTrigger（兼容 APScheduler 不同版本参数名差异）。
+    
+    为什么需要做兼容：
+    - 当前项目的调度器依赖 APScheduler，但不同版本的 DateTrigger 初始化参数名存在差异（例如 run_date / run_time）。
+    - 直接写死某个参数名会导致在依赖版本变化时后台 worker 直接崩溃，影响消息处理链路稳定性。
+    """
+    try:
+        params = inspect.signature(DateTrigger).parameters
+    except Exception:
+        params = inspect.signature(DateTrigger.__init__).parameters
+
+    if "run_date" in params:
+        return DateTrigger(run_date=run_at)
+    if "run_time" in params:
+        return DateTrigger(run_time=run_at)
+
+    return DateTrigger(run_at)
 
 class MessageAdapter:
     """
@@ -62,7 +83,7 @@ class MessageAdapter:
                     logger.info(f"Submitting job {job_id} to scheduler")
                     
                     # 提交一次性任务：立刻执行（UTC 当前时间）
-                    trigger = DateTrigger(run_date=datetime.now(timezone.utc))
+                    trigger = _create_date_trigger(datetime.now(timezone.utc))
                     await self.scheduler.add_schedule(
                         self.process_message_job,
                         trigger,

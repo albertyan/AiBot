@@ -158,8 +158,8 @@ not_care={'session_item_服务号','session_item_公众号','session_item_QQ邮�
 # print(get_new_message_num(close_weixin=False))
 # print(MessagesExt.dump_sessions())
 # print(MessagesExt.dump_recent_sessions('Today'))
-# print(WeChatBot.scan_for_new_messages())李磊
-print(WeChatBot.pull_messages(friend='箭冠网络科技、京兆瓦肆',myname='albertyanm',number=10))
+print(WeChatBot.scan_for_new_messages(close_weixin=False))
+# print(WeChatBot.pull_messages(friend='箭冠网络科技、京兆瓦肆',myname='albertyanm',number=10))
 print("*" * 30)
 # print(ToolsExt.where_weixin())
 # FriendSettingsExt.change_remark('张建坤','张建坤1')
@@ -170,7 +170,8 @@ print("*" * 30)
 # from utils.common_util import get_machine_code
 # if __name__ == "__main__":
 #     print(get_machine_code())
-
+# from service.monitor_service import monitor_service
+# monitor_service.start_monitor()
 
 
 

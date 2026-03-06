@@ -11,7 +11,7 @@ from typing import Dict, Any
 
 # 设置 COM 线程模型为 STA (单线程单元)，pywinauto 需要此模式
 # 必须在导入任何 COM 相关库(如 pythoncom, pywinauto, comtypes)之前设置
-sys.coinit_flags = 2
+sys.coinit_flags = 0
 
 from pydantic import BaseModel
 from fastapi import FastAPI, Response, Request

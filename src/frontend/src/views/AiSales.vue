@@ -198,42 +198,37 @@ watch(messages, () => {
   scrollToBottom();
 }, { deep: true });
 
+/**
+ * 将后端 refresh_weixin_messages 的 sessions 映射为前端会话列表结构
+ * 为什么要统一映射：手动刷新与 WebSocket 推送使用同一后端模型，集中映射可避免字段分叉导致 UI 行为不一致。
+ */
+const mapBackendSessionsToUi = (sessionData) => {
+  if (!Array.isArray(sessionData)) return [];
+  return sessionData.map(s => ({
+    id: s.id,
+    name: s.name,
+    tag: s.is_group ? '群聊' : '私聊',
+    time: s.last_time,
+    preview: s.last_message,
+    count: s.count,
+    source: s.source,
+    avatarColor: 'bg-slate-400',
+    is_group: !!s.is_group
+  }));
+};
+
 const fetchMessages = async () => {
   try {
     isRefreshing.value = true;
     const res = await refreshWeixinMessages();
     if (res.code === 200 && res.data && res.data.sessions) {
-      // Transform backend data to frontend format if necessary
-      // Assuming backend returns sessions in a format we can adapt
-      // Example backend structure based on previous context: {"sessions": {...}}
-      // We need to map it to sessions array format
-      
-      // Since I don't see the exact response structure of refresh_weixin_messages in the context
-      // I will assume it returns a list or a dict that needs transformation.
-      // However, looking at aisale.py (user provided context), it returns {"sessions": newMessages_dict}
-      
-      // Let's adapt based on the provided mock structure for now, 
-      // but ideally we should populate it with real data.
-      // If the backend just returns the count or status, we might need another API to get the list.
-      // But let's assume res.data.sessions contains the session list.
-      
       const sessionData = res.data.sessions;
       if (Array.isArray(sessionData)) {
-         recentSessions.value = sessionData.map(s => ({
-            id: s.id,
-            name: s.name,
-            tag: s.is_group ? '群聊' : '私聊',
-            time: s.last_time,
-            preview: s.last_message,
-            count: s.count,
-            source: s.source,
-            avatarColor: 'bg-slate-400',
-            is_group: !!s.is_group
-         }));
-         // 默认选中第一条会话以避免右侧空白
-         if (!currentSession.value && recentSessions.value.length > 0) {
-           selectSession(recentSessions.value[0]);
-         }
+        recentSessions.value = mapBackendSessionsToUi(sessionData);
+        // 默认选中第一条会话以避免右侧空白
+        if (!currentSession.value && recentSessions.value.length > 0) {
+          selectSession(recentSessions.value[0]);
+        }
       }
     }
   } catch (error) {
@@ -253,12 +248,6 @@ onMounted(async () => {
     if (autoReply.value) {
       openMessageWS();
     }
-    
-    // // Initial fetch
-    // await fetchMessages();
-    
-    // // Set up polling every 5 seconds (or appropriate interval)
-    // refreshTimer.value = setInterval(fetchMessages, 5000);
     
   } catch (error) {
     console.error('Failed to sync monitor status:', error);
@@ -317,24 +306,47 @@ const openMessageWS = () => {
     ws.onmessage = (evt) => {
       try {
         const data = JSON.parse(evt.data || '{}');
-        if (data && data.type === 'new_messages' && Array.isArray(data.items)) {
-          for (const item of data.items) {
-            const sender = String(item.sender || '');
-            const content = String(item.content || '');
-            if (!sender || !content) continue;
-            const session = currentSession.value;
-            if (session && session.name === sender) {
-              const msg = {
-                id: `${session.id}-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
-                type: 'text',
-                content,
-                isMe: false,
-                sender
-              };
-              messages.value = [...messages.value, msg];
-              const key = getSessionKey(session);
-              const cached = sessionMessagesCache.value[key] || [];
-              sessionMessagesCache.value = { ...sessionMessagesCache.value, [key]: [...cached, msg] };
+        if (data && data.type === 'refresh_weixin_messages' && Array.isArray(data?.data?.sessions)) {
+          const pushed = mapBackendSessionsToUi(data.data.sessions);
+          if (pushed.length <= 0) return;
+
+          const byKey = new Map((recentSessions.value || []).map(s => [getSessionKey(s), s]));
+          for (const s of pushed) {
+            const key = getSessionKey(s);
+            const existed = byKey.get(key);
+            byKey.set(key, existed ? { ...existed, ...s } : s);
+          }
+
+          // 为什么按“推送优先”排序：推送代表新变化，置顶在前更符合聊天应用的视觉预期
+          const pushedKeys = new Set(pushed.map(s => getSessionKey(s)));
+          const merged = [
+            ...pushed.map(s => byKey.get(getSessionKey(s))).filter(Boolean),
+            ...(recentSessions.value || []).filter(s => !pushedKeys.has(getSessionKey(s)))
+          ];
+          recentSessions.value = merged;
+
+          const current = currentSession.value;
+          if (current) {
+            const updated = byKey.get(getSessionKey(current));
+            if (updated) {
+              currentSession.value = updated;
+              const content = String(updated.preview || '');
+              if (content) {
+                const last = (messages.value || [])[messages.value.length - 1];
+                if (!last || last.content !== content) {
+                  const msg = {
+                    id: `${updated.id}-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+                    type: 'text',
+                    content,
+                    isMe: false,
+                    sender: updated.name
+                  };
+                  messages.value = [...messages.value, msg];
+                  const cacheKey = getSessionKey(updated);
+                  const cached = sessionMessagesCache.value[cacheKey] || [];
+                  sessionMessagesCache.value = { ...sessionMessagesCache.value, [cacheKey]: [...cached, msg] };
+                }
+              }
             }
           }
         }

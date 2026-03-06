@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, TYPE_CHECKING
 import re
 import time
 import os
@@ -9,11 +9,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from pywinauto import mouse
 from pywinauto.timings import Timings
+from pywinauto import WindowSpecification
 
 from auto.WeChatBot import WeChatBot
 from auto.WeChatToolsExt import ToolsExt, NavigatorExt
 from auto.UielementsExt import PopUpProfileWindow
-from api.schemas import WeChatSession
+
+if TYPE_CHECKING:
+    from api.schemas import WeChatSession
+
 from db.models import Friends, Groups, WechatAccounts
 from environment import CurrentUser, CurrentUserDep, state
 from utils.config_file import check_base_dir, check_personal_dir
@@ -27,19 +31,20 @@ class WeChatService:
     def __init__(self):
         pass
 
-    def pull_friend_messages(self, wx_number: str, friend: str) -> List[WeChatSession]:
+    def pull_friend_messages(self, wx_number: str, friend: str) -> List['WeChatSession']:
         """
         拉取微信会话内容列表
         """
         messages = WeChatBot.pull_messages(friend=friend, myname=wx_number, number=10)
         return messages
 
-    def get_new_messages(self, wx_number: str) -> List[WeChatSession]:
+    def get_new_messages(self, wx_number: str, main_window: WindowSpecification = None) -> List['WeChatSession']:
         """
         扫描微信新消息并解析
         """
-        newMessages_list = WeChatBot.scan_for_new_messages()
-        # newMessages_list is [{'sender': 'raw_string'}, ...]
+        from api.schemas import WeChatSession
+        # scan_for_new_messages 返回的是列表 [{sender: tip_string}, ...]
+        newMessages_list = WeChatBot.scan_for_new_messages(main_window=main_window)
         
         sessions = []
         for item in newMessages_list:
