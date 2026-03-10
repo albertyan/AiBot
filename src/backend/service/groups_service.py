@@ -4,6 +4,8 @@ from sqlalchemy import delete, select, func, distinct, update
 from auto.WeChatAutoExt import ContactsExt
 from db.models import Groups
 from utils.perf_util import instrument_class
+from environment import state
+from loguru import logger
 
 class GroupsService:
     def __init__(self):
@@ -39,6 +41,13 @@ class GroupsService:
         # 提交事务
         await db.commit()
         
+        # 更新全局缓存
+        try:
+            all_groups = await self.get_all_groups(wx_number, db)
+            state.set_groups(wx_number, all_groups)
+        except Exception as e:
+            logger.error(f"更新群聊缓存失败: {e}")
+
         return {'groups': groups, 'tags': list('group')}
 
     async def get_all_groups(self, wx_number: str, db: AsyncSession) -> List[Dict[str, Any]]:

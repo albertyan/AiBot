@@ -4,6 +4,7 @@
 # @File    : server.py
 '''
 import os
+import json
 
 from fastapi import APIRouter, WebSocket, Response, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse
@@ -63,8 +64,18 @@ async def websocket_messages(websocket: WebSocket):
     await ws_manager.connect(websocket)
     try:
         while True:
-            # 简单心跳：客户端如发送任意文本即可保持连接
-            await websocket.receive_text()
+            text = await websocket.receive_text()
+            if not text:
+                continue
+            try:
+                payload = json.loads(text)
+            except Exception:
+                payload = None
+
+            if isinstance(payload, dict) and payload.get("type") == "subscribe":
+                topics = payload.get("topics", []) or []
+                if isinstance(topics, list):
+                    await ws_manager.subscribe(websocket, topics)
     except WebSocketDisconnect:
         await ws_manager.disconnect(websocket)
     except Exception:

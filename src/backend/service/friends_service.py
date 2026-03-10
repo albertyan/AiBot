@@ -8,6 +8,7 @@ import io
 from auto.WeChatAutoExt import ContactsExt
 from db.models import Friends, ContactTags
 from utils.perf_util import instrument_class
+from environment import state
 
 class FriendsService:
     def __init__(self):
@@ -67,6 +68,13 @@ class FriendsService:
         # 提交事务
         await db.commit()
         
+        # 更新全局缓存
+        try:
+            all_friends = await self.get_all_friends(wx_number, db)
+            state.set_friends(wx_number, all_friends)
+        except Exception as e:
+            logger.error(f"更新好友缓存失败: {e}")
+
         return {'friends': friends, 'tags': list(tag_counts.keys())}
 
     async def get_all_friends(self, wx_number: str, db: AsyncSession) -> List[Dict[str, Any]]:

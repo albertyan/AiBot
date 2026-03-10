@@ -302,6 +302,7 @@ const openMessageWS = () => {
     ws.onopen = () => {
       // 简单心跳
       try { ws.send('hi'); } catch (_) {}
+      try { ws.send(JSON.stringify({ type: 'subscribe', topics: ['wechat_messages'] })); } catch (_) {}
     };
     ws.onmessage = (evt) => {
       try {

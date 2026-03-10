@@ -22,6 +22,8 @@ from db.models import Friends, Groups, WechatAccounts
 from environment import CurrentUser, CurrentUserDep, state
 from utils.config_file import check_base_dir, check_personal_dir
 from utils.perf_util import instrument_class
+from service.groups_service import groups_service
+from service.friends_service import friends_service
 
 PopUpProfileWindow = PopUpProfileWindow()
 
@@ -87,7 +89,11 @@ class WeChatService:
                     msg_content = msg_content[:-len(last_time)]
                     
                 last_message = msg_content.strip()
-                
+                # 检查是否是群消息
+                groups = state.get_groups(wx_number)
+                is_group=False
+                if groups:
+                    is_group = any(group.get("name") == sender for group in groups)
                 sessions.append(WeChatSession(
                     id=sender, # use sender name as ID
                     name=sender,
@@ -96,7 +102,8 @@ class WeChatService:
                     last_time=last_time,
                     is_top=is_top,
                     raw_content=raw_content,
-                    source=wx_number
+                    source=wx_number,
+                    is_group=is_group
                 ))
         return sessions
 
@@ -175,15 +182,15 @@ class WeChatService:
             
         state.set_current_user(CurrentUser(nickname=nickname, number=wxNumber))
         
-        # 获取好友数量
-        stmt = select(func.count(Friends.id)).where(Friends.account_id == wxNumber)
-        result = await db.execute(stmt)
-        friend_count = result.scalar()
+        # 获取好友数量并更新全局缓存
+        friends = await friends_service.get_all_friends(wxNumber, db)
+        state.set_friends(wxNumber, friends)
+        friend_count = len(friends)
         
-        # 获取群数量
-        stmt = select(func.count(Groups.id)).where(Groups.account_id == wxNumber)
-        result = await db.execute(stmt)
-        group_count = result.scalar()
+        # 获取群数量并更新全局缓存
+        groups = await groups_service.get_all_groups(wxNumber, db)
+        state.set_groups(wxNumber, groups)
+        group_count = len(groups)
         
         # 检查用户目录是否存在， 如果不存在则创建
         check_base_dir()

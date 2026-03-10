@@ -1,7 +1,6 @@
 import uuid
 import asyncio
 from datetime import datetime, timezone
-import inspect
 from queue import Queue, Empty
 from loguru import logger
 from apscheduler.triggers.date import DateTrigger
@@ -10,23 +9,10 @@ from scheduler.scheduler_service import get_scheduler
 
 def _create_date_trigger(run_at: datetime) -> DateTrigger:
     """
-    创建一次性 DateTrigger（兼容 APScheduler 不同版本参数名差异）。
-    
-    为什么需要做兼容：
-    - 当前项目的调度器依赖 APScheduler，但不同版本的 DateTrigger 初始化参数名存在差异（例如 run_date / run_time）。
-    - 直接写死某个参数名会导致在依赖版本变化时后台 worker 直接崩溃，影响消息处理链路稳定性。
+    创建一次性 DateTrigger（适配 APScheduler 4.0.0a6）。
     """
-    try:
-        params = inspect.signature(DateTrigger).parameters
-    except Exception:
-        params = inspect.signature(DateTrigger.__init__).parameters
-
-    if "run_date" in params:
-        return DateTrigger(run_date=run_at)
-    if "run_time" in params:
-        return DateTrigger(run_time=run_at)
-
-    return DateTrigger(run_at)
+    # APScheduler 4.0.0a6 使用 run_time 参数
+    return DateTrigger(run_time=run_at)
 
 class MessageAdapter:
     """
@@ -96,7 +82,8 @@ class MessageAdapter:
                     await asyncio.sleep(0.5)
                     
             except Exception as e:
-                logger.error(f"Error in MessageAdapter worker: {e}")
+                logger.trace(f"Error in MessageAdapter worker: {e}")
+                # logger.error(f"Error in MessageAdapter worker: {e}")
                 await asyncio.sleep(1)
 
     def stop_worker(self):

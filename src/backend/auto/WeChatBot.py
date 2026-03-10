@@ -131,8 +131,8 @@ class WeChatBot:
         messages=[]
         sender=[]
         messages_dict = list(zip(sender,messages))
-        # main_window=Navigator.open_dialog_window(friend=friend,is_maximize=is_maximize,search_pages=search_pages)
-        main_window=WeChatBot.find_friend_window(friend,main_window)
+        main_window=Navigator.open_dialog_window(friend=friend,is_maximize=is_maximize,search_pages=search_pages)
+        # main_window=WeChatBot.find_friend_window(friend,main_window)
         chat_list=main_window.child_window(**Lists.FriendChatList)
         if not chat_list.exists(timeout=0.1):
             print(f'非正常好友或群聊,无法获取聊天信息！')
@@ -144,7 +144,8 @@ class WeChatBot:
             last_item=chat_list.children(control_type='ListItem')[-1]
             messages.append(last_item.window_text())
             sender.append(get_message_sender(last_item,friend,myname))
-            Tools.activate_chatList(chat_list)
+            logger.debug("pull_messages 3 :" + time.strftime("%Y-%m-%d %H:%M:%S" ,time.localtime()))
+            # Tools.activate_chatList(chat_list)
             while len(messages)<number:
                 chat_list.type_keys('{UP}')
                 selected=[listitem for listitem in chat_list.children(control_type='ListItem') if listitem.has_keyboard_focus()]
@@ -153,11 +154,13 @@ class WeChatBot:
                     sender.append(get_message_sender(selected[0],friend,myname))
                 if not selected:
                     break
+            logger.debug("pull_messages 4 :" + time.strftime("%Y-%m-%d %H:%M:%S" ,time.localtime()))
             chat_list.type_keys('{END}')
             messages=messages[-number:]
             sender=sender[-number:]
             if close_weixin:
                 main_window.close()
+
             messages_dict = list(zip(sender,messages))
         return messages_dict
             
@@ -187,8 +190,8 @@ class WeChatBot:
 
         not_care={'session_item_服务号','session_item_公众号'}
         if main_window is None:
-            main_window=Navigator.open_weixin(is_maximize=False)
-            # main_window=WeChatBot.find_window()
+            # main_window=Navigator.open_weixin(is_maximize=False)
+            main_window=WeChatBot.find_window()
             logger.debug("scan_for_new_messages: main_window opened.")
         newMessageSenders=[]
         newMessageTipList=[]
@@ -272,38 +275,13 @@ class WeChatBot:
             chat_button.click_input()
             logger.debug("[find_friend_window] clicked chat button")
             # main_window = WeChatBot.find_window()
-            logger.debug(f"[find_friend_window] main_window element: {main_window}")
-
-
-            logger.debug("[find_friend_window] about to read main_window basic properties")
-            try:
-                logger.debug(f"[find_friend_window] main_window handle: {main_window.handle}")
-                logger.debug(f"[find_friend_window] main_window class_name: {main_window.class_name()}")
-                logger.debug(f"[find_friend_window] main_window rectangle: {main_window.rectangle()}")
-                logger.debug(f"[find_friend_window] main_window is_visible: {main_window.is_visible()}")
-                logger.debug(f"[find_friend_window] main_window is_enabled: {main_window.is_enabled()}")
-            except Exception as e:
-                logger.exception(f"[find_friend_window] read main_window properties failed: {e}")
-                raise
-            # logger.debug("[find_friend_window] about to read main_window.element_info")
-            # try:
-            #     main_window_element_info = main_window.element_info
-            #     logger.debug(f"[find_friend_window] main_window element_info: {main_window_element_info}")
-            # except Exception as e:
-            #     logger.exception(f"[find_friend_window] read main_window.element_info failed: {e}")
-            #     raise
-            logger.debug("[find_friend_window] about to call descendants for Search")
+            
             search=main_window.descendants(**Main_window.Search)[0]
             logger.debug("[find_friend_window] descendants returned, about to read search.element_info")
-            try:
-                logger.debug(f"[find_friend_window] search element_info: {search.element_info}")
-            except Exception as e:
-                logger.exception(f"[find_friend_window] read search.element_info failed: {e}")
-                raise
             search.click_input()
             search.set_text(friend)
             logger.debug("[find_friend_window] search text set, waiting for results")
-            time.sleep(0.8)
+            time.sleep(0.5)
             search_results=main_window.child_window(title='',control_type='List')
             search_result=Tools.get_search_result(friend=friend,search_result=search_results)
             if search_result:
