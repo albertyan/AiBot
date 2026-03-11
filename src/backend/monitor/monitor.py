@@ -123,17 +123,9 @@ class WeChatMonitor:
                     for s in sessions or []:
                         if s.name:
                             logger.debug(f"Session sender: {s.model_dump_json()}")
-                            msgs = WeChatBot.pull_messages(
-                                s.name,
-                                user.wxNickname,
-                                number=8,
-                                search_pages=0,
-                                is_maximize=False,
-                                close_weixin=False,
-                                main_window=None  # 避免跨线程对象
-                            )
+                            msgs =  wechat_service.pull_friend_messages(user.wxNickname,s.name)
                             if msgs:
-                                message_manager.handle_messages(s.name, msgs)
+                                message_manager.handle_messages(user.wxNumber, s.name, msgs)
                                 logger.debug(f"Session new_messages: {msgs}")
 
                 except Exception as e:
@@ -141,9 +133,10 @@ class WeChatMonitor:
                     self._stop_event.wait(self.interval)
                     continue
                 scan_cost = _time.monotonic() - scan_start
-                if scan_cost > self.scan_timeout:
+                # 为什么引入动态阈值：扫描耗时与会话数量相关，但在会话为0时乘法会导致阈值为0，引发误报
+                if scan_cost > (self.scan_timeout * max(1, len(sessions))):
                     self._fail_count += 1
-                    logger.error(f"WeChat scan slow {scan_cost:.2f}s > {self.scan_timeout}s (fail_count={self._fail_count})")
+                    logger.error(f"WeChat scan slow {scan_cost:.2f}s > {(self.scan_timeout * max(1, len(sessions))):.2f}s (fail_count={self._fail_count})")
                     if self._fail_count >= self.fail_threshold:
                         self._circuit_until = _time.monotonic() + self.open_seconds
                         logger.error(f"Circuit opened for {self.open_seconds}s due to consecutive slow scans")
@@ -158,22 +151,15 @@ class WeChatMonitor:
                 continue
             logger.debug(f"Loop #{loop_count}: Scan finished")
             
-            # if new_messages:
-            #     logger.info(f"New messages found: {new_messages}")
-            #     try:
-            #         message_manager.handle_messages(new_messages)
-            #     except Exception as e:
-            #         logger.error(f"Error handling messages: {e}")
             # 等待间隔
             elapsed = _time.monotonic() - cycle_start
             remaining = max(0.0, self.interval - elapsed)
-            logger.debug(f"Loop #{loop_count}: Sleeping for {remaining:.2f}s")
             self._stop_event.wait(remaining)
 
 # 全局单例
 monitor = WeChatMonitor(
     interval=5,
-    scan_timeout=6.0,   # 为什么设为6秒：适配实际UI耗时，避免正常情况下误触超时
+    scan_timeout=10.0,   # 为什么设为10秒：适配实际UI耗时，避免正常情况下误触超时
     fail_threshold=5,   # 为什么调高至5：减少短暂波动导致的频繁熔断
     open_seconds=15.0   # 为什么缩短至15秒：更快恢复尝试，兼顾保护与可用性
 )

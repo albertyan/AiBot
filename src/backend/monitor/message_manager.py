@@ -119,7 +119,7 @@ class MessageManager:
         except Exception as e:
             logger.error(f"Failed to load config: {e}")
 
-    def handle_messages(self, sender, new_messages):
+    def handle_messages(self,myWxNumber: str, sender, new_messages):
         """
         处理新消息
         为什么在此处编排：集中调用过滤策略与解析模板，便于统一维护与调试
@@ -178,13 +178,12 @@ class MessageManager:
                     logger.debug(f"Filtered by {f.__class__.__name__}: sender={sender}")
                     return
 
-        # 2. 发送给 websocket：前端只识别 refresh_weixin_messages，因此这里构造最小会话结构
-        # 为什么构造最小字段：pull_messages 返回的是对话内容，不具备完整会话元数据；先保证 UI 能看到“最新一句”，其余字段留空不阻塞流程。
+        # 2. 发送给 websocket：前端识别 refresh_weixin_messages，用于更新左侧会话摘要
         try:
             ws_manager.broadcast_threadsafe({
-                "type": "wechat_chat_messages",
+                "type": "refresh_weixin_messages",
                 "data": {
-                    "messages": [{
+                    "sessions": [{
                         "id": sender,
                         "name": sender,
                         "count": 0,
@@ -192,7 +191,7 @@ class MessageManager:
                         "last_time": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
                         "is_top": False,
                         "raw_content": newest_content,
-                        "source": "",
+                        "source": myWxNumber,
                         "is_group": False
                     }]
                 }

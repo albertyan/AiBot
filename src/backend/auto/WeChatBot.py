@@ -62,7 +62,7 @@ class WeChatBot:
         pass
 
     @staticmethod
-    def pull_messages(friend:str,myname:str,number:int,search_pages:int=None,is_maximize:bool=None,close_weixin:bool=None,main_window:WindowSpecification=None)->list[str]:
+    def pull_messages(friend:str,myname:str,number:int=8,search_pages:int=None,is_maximize:bool=None,close_weixin:bool=None,main_window:WindowSpecification=None)->list[str]:
         '''
         该函数用来从聊天界面获取聊天消息,也可当做获取聊天记录
         Args:
@@ -75,7 +75,7 @@ class WeChatBot:
         Returns:
             messages:聊天记录中的消息(时间顺序从晚到早)
         '''
-        def get_message_sender(listitem:ListItemWrapper,friend:str, myname:str='albertyanm')->str:
+        def get_message_sender(listitem:ListItemWrapper,friend:str, myname:str)->str:
             '''
             判断消息发送者
             Args:
@@ -131,7 +131,7 @@ class WeChatBot:
         messages=[]
         sender=[]
         messages_dict = list(zip(sender,messages))
-        main_window=Navigator.open_dialog_window(friend=friend,is_maximize=is_maximize,search_pages=search_pages)
+        main_window=Navigator.open_dialog_window(friend=friend,is_maximize=is_maximize,search_pages=5)
         # main_window=WeChatBot.find_friend_window(friend,main_window)
         chat_list=main_window.child_window(**Lists.FriendChatList)
         if not chat_list.exists(timeout=0.1):
@@ -144,8 +144,7 @@ class WeChatBot:
             last_item=chat_list.children(control_type='ListItem')[-1]
             messages.append(last_item.window_text())
             sender.append(get_message_sender(last_item,friend,myname))
-            logger.debug("pull_messages 3 :" + time.strftime("%Y-%m-%d %H:%M:%S" ,time.localtime()))
-            # Tools.activate_chatList(chat_list)
+            Tools.activate_chatList(chat_list)
             while len(messages)<number:
                 chat_list.type_keys('{UP}')
                 selected=[listitem for listitem in chat_list.children(control_type='ListItem') if listitem.has_keyboard_focus()]
@@ -154,7 +153,6 @@ class WeChatBot:
                     sender.append(get_message_sender(selected[0],friend,myname))
                 if not selected:
                     break
-            logger.debug("pull_messages 4 :" + time.strftime("%Y-%m-%d %H:%M:%S" ,time.localtime()))
             chat_list.type_keys('{END}')
             messages=messages[-number:]
             sender=sender[-number:]
@@ -175,8 +173,6 @@ class WeChatBot:
             newMessages_dict:有新消息的好友备注及其对应的新消息数量构成的字典
         '''
 
-        # (修改原因：仅增加调试日志，不修改原有逻辑)
-        logger.debug("Entering scan_for_new_messages")
         def traverse_messsage_list(listItems):
             #newMessageTips为newMessagefriends中每个元素的文本:['测试365 5条新消息','一家人已置顶20条新消息']这样的字符串列表
             listItems=[listItem for listItem in listItems if listItem.automation_id() not in not_care 
@@ -192,7 +188,6 @@ class WeChatBot:
         if main_window is None:
             # main_window=Navigator.open_weixin(is_maximize=False)
             main_window=WeChatBot.find_window()
-            logger.debug("scan_for_new_messages: main_window opened.")
         newMessageSenders=[]
         newMessageTipList=[]
         newMessages_dict=dict(zip(newMessageSenders,newMessageTipList))
@@ -200,32 +195,26 @@ class WeChatBot:
         #左上角微信按钮的红色消息提示(\d+条新消息)在FullDescription属性中,
         #只能通过id来获取,id是30159，之前是30007,可能是qt组件映射关系不一样
         full_desc=chats_button.element_info.element.GetCurrentPropertyValue(30159)
-        logger.debug(f"Full description property: {full_desc}")
         new_message_num=re.search(r'\d+',full_desc)#正则提取数量
         #微信会话列表内ListItem标准格式:备注\s(已置顶)\s(\d+)条未读\s最后一条消息内容\s时间
         new_message_pattern=re.compile(r'\n\[(\d+)条\]')#只给数量分组.group(1)获取
         if not new_message_num:
             print(f'没有新消息')
-            logger.debug("No new messages found.")
             return {}
         if new_message_num:
             new_message_num=int(new_message_num.group(0))
-            logger.debug(f"Total new messages to find: {new_message_num}")
             session_list=main_window.child_window(**Main_window.ConversationList)
             time.sleep(0.2)
-            logger.debug(f"target={new_message_num}")
             #遍历获取带有新消息的ListItem
             listItems=session_list.children(control_type='ListItem')
             time.sleep(delay)
             senders,nums,newMessageTips=traverse_messsage_list(listItems)
-            logger.debug(f"extracted: {len(senders)} senders. Nums: {nums}")
             ##提取姓名和数量
             newMessageSenders.extend(senders)
             newMessageTipList.extend(newMessageTips)
             newMessages_dict=dict(zip(newMessageSenders,newMessageTipList))
             not_={'QQ邮箱提醒','微信支付','微信游戏','服务通知'}
             newMessages_dict=[{sender:tip} for sender,tip in newMessages_dict.items() if sender not in not_]
-        logger.debug(f"Scan finished. Returning: {newMessages_dict}")
         return newMessages_dict
 
     @staticmethod
@@ -243,7 +232,6 @@ class WeChatBot:
         desktop=Desktop(**Independent_window.Desktop)
         win32gui.ShowWindow(handle,1)
         window=desktop.window(handle=handle)
-        window.restore()
         return window
 
     @staticmethod
@@ -261,31 +249,23 @@ class WeChatBot:
         chat_button=main_window.child_window(**SideBar.Chats)
         #先看看当前聊天界面是不是好友的聊天界面
         current_chat=main_window.child_window(**Edits.CurrentChatEdit)
-        logger.debug(f"[find_friend_window] current_chat element: {current_chat.element_info}")
         if current_chat.exists(timeout=0.2) and current_chat.window_text()==friend:
-            logger.debug("[find_friend_window] current chat matched target, focusing edit area")
             edit_area=main_window.child_window(**Edits.CurrentChatEdit)
             if edit_area.exists(timeout=0.1) and edit_area.is_visible():
                 edit_area.click_input()
             #如果当前主界面聊天界面顶部的名称为好友名称，直接返回结果
             return main_window
         else:#否则直接从顶部搜索栏出搜索结果
-            logger.debug("[find_friend_window] current chat not matched, using search flow")
             #如果会话列表不存在或者不可见的话才点击一下聊天按钮
             chat_button.click_input()
-            logger.debug("[find_friend_window] clicked chat button")
-            # main_window = WeChatBot.find_window()
             
             search=main_window.descendants(**Main_window.Search)[0]
-            logger.debug("[find_friend_window] descendants returned, about to read search.element_info")
             search.click_input()
             search.set_text(friend)
-            logger.debug("[find_friend_window] search text set, waiting for results")
             time.sleep(0.5)
             search_results=main_window.child_window(title='',control_type='List')
             search_result=Tools.get_search_result(friend=friend,search_result=search_results)
             if search_result:
-                logger.debug("[find_friend_window] search_result found, opening chat")
                 search_result.click_input()
                 edit_area=main_window.child_window(**Edits.CurrentChatEdit)
                 if edit_area.exists(timeout=0.1):

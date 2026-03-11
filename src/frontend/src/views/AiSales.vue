@@ -307,6 +307,71 @@ const openMessageWS = () => {
     ws.onmessage = (evt) => {
       try {
         const data = JSON.parse(evt.data || '{}');
+        if (data && data.type === 'wechat_chat_messages' && Array.isArray(data?.data?.messages)) {
+          const senderName = String(data?.data?.sender || '').trim();
+          if (!senderName) return;
+          const session = (recentSessions.value || []).find(s => getSessionKey(s) === senderName || s?.name === senderName) || {
+            id: senderName,
+            name: senderName,
+            tag: '私聊',
+            time: '',
+            preview: '',
+            count: 0,
+            source: '',
+            avatarColor: 'bg-slate-400',
+            is_group: false
+          };
+          let arr = data.data.messages;
+          if (Array.isArray(arr)) {
+            arr = [...arr].reverse();
+          } else {
+            arr = [];
+          }
+          const parsed = [];
+          for (const item of arr) {
+            let sender = '';
+            let content = '';
+            if (Array.isArray(item) && item.length >= 2) {
+              sender = String(item[0] || '');
+              content = String(item[1] || '');
+            } else if (item && typeof item === 'object') {
+              sender = String(item.sender || item.from || '');
+              content = String(item.content || item.message || item.text || '');
+            } else if (typeof item === 'string') {
+              content = item;
+            }
+            const isTime = !sender && (
+                      /^\s*\d{1,2}:\d{2}\s*$/.test(content) || 
+                      /^\s*昨天\s+\d{1,2}:\d{2}\s*$/.test(content) ||
+                      /^\s*星期[一二三四五六日]\s+\d{1,2}:\d{2}\s*$/.test(content) ||
+                      /^\s*(\d{4}年)?\d{1,2}月\d{1,2}日(\s+\d{1,2}:\d{2})?\s*$/.test(content)
+                    );
+            if (isTime) {
+              parsed.push({
+                id: `${session.id}-${parsed.length}-time`,
+                type: 'time',
+                content
+              });
+            } else if (content) {
+              parsed.push({
+                id: `${session.id}-${parsed.length}`,
+                type: 'text',
+                content,
+                isMe: sender === 'Self',
+                sender: sender === 'Self' ? '我' : (sender || session.name)
+              });
+            }
+          }
+          const key = getSessionKey(session);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            sessionMessagesCache.value = { ...sessionMessagesCache.value, [key]: parsed };
+            const current = currentSession.value;
+            if (current && getSessionKey(current) === key) {
+              messages.value = parsed;
+            }
+          }
+          return;
+        }
         if (data && data.type === 'refresh_weixin_messages' && Array.isArray(data?.data?.sessions)) {
           const pushed = mapBackendSessionsToUi(data.data.sessions);
           if (pushed.length <= 0) return;

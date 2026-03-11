@@ -1,3 +1,4 @@
+import math
 from typing import List, Dict, Any, TYPE_CHECKING
 import re
 import time
@@ -37,7 +38,10 @@ class WeChatService:
         """
         拉取微信会话内容列表
         """
-        messages = WeChatBot.pull_messages(friend=friend, myname=wx_number, number=10)
+        messages = WeChatBot.pull_messages(friend=friend, myname=wx_number, 
+                                           number=8,search_pages=0, 
+                                           close_weixin=False,is_maximize=False,
+                                           main_window=None)
         return messages
 
     def get_new_messages(self, wx_number: str, main_window: WindowSpecification = None) -> List['WeChatSession']:
