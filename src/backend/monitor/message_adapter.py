@@ -83,7 +83,6 @@ class MessageAdapter:
                     
             except Exception as e:
                 logger.trace(f"Error in MessageAdapter worker: {e}")
-                # logger.error(f"Error in MessageAdapter worker: {e}")
                 await asyncio.sleep(1)
 
     def stop_worker(self):

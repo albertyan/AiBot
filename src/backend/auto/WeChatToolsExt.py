@@ -4,6 +4,8 @@ import re
 import time
 import pyautogui
 import win32gui
+
+from auto.UielementsExt import SideBarExt
 from .pyweixin.Config import GlobalConfig
 from pywinauto import mouse,Desktop
 from pywinauto.controls.uia_controls import ListViewWrapper,ListItemWrapper,EditWrapper #TypeHint要用到
@@ -11,12 +13,13 @@ from pywinauto import WindowSpecification
 from .pyweixin.Uielements import (Login_window,Main_window,SideBar,Independent_window,ListItems,
 Buttons,Texts,Menus,TabItems,Lists,Edits,Windows,Panes)
 from .pyweixin.WinSettings import SystemSettings 
+from auto.WeChatBot import WeChatBot
 ##########################################################################################
 
 #各种UI实例化
 Login_window=Login_window()#登录界面的UI
 Main_window=Main_window()#主界面UI
-SideBar=SideBar()#侧边栏UI
+SideBarExt=SideBarExt()#侧边栏UI
 Independent_window=Independent_window()#独立主界面UI
 Buttons=Buttons()#所有Button类型UI
 Texts=Texts()#所有Text类型UI
@@ -76,3 +79,22 @@ class NavigatorExt(Navigator):
             time.sleep(0.1)
         my_info_window=desktop.window(handle=handle)
         return my_info_window
+
+    @staticmethod
+    def open_contacts(is_maximize:bool=None)->WindowSpecification:
+        '''
+        该方法用于打开微信通信录界面
+        Args:
+            is_maximize:微信界面是否全屏,默认不全屏
+        '''
+        if is_maximize is None:
+            is_maximize=GlobalConfig.is_maximize
+        main_window=WeChatBot.find_window()
+        contacts=main_window.child_window(**SideBarExt.Contacts)
+        contacts.click_input()
+        #类型是自定义的控件,必须先定位到该控件才可以继续定位通讯录列表
+        #直接main_window.child_window()定位不到
+        custom=main_window.descendants(control_type='Custom')
+        contact_list=custom[-1].children()[1].descendants(control_type='List')[0]
+        contact_list.type_keys("{HOME}")
+        return contact_list,main_window

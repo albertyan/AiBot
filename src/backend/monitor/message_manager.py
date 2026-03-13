@@ -7,7 +7,8 @@ from abc import ABC, abstractmethod
 from loguru import logger
 from .message_adapter import message_adapter
 from websocket.ws_manager import ws_manager
-
+from environment import state
+from service.ai_config_service import ai_config_service
 
 class MessageFilter(ABC):
     """
@@ -91,9 +92,8 @@ class MessageManager:
     负责加载配置并过滤/分发消息
     """
     def __init__(self):
-        self.config_path = os.path.join(os.path.dirname(__file__), "reply_strategy_v2.json")
         self.config = {}
-        self.load_config()
+        self.load_config(state.get_current_user())
         # 为什么在构造函数初始化：避免每次处理都创建对象，降低开销且便于统一配置注入
         self.filters: List[MessageFilter] = [
             ColleagueIgnoreFilter(),
@@ -106,16 +106,10 @@ class MessageManager:
         self._last_state: Dict[str, Dict[str, int | str]] = {}
         self._count_re = re.compile(r"\[(\d+)条\]")
 
-    def load_config(self):
+    def load_config(self, myWxNumber: str):
         """加载配置文件"""
-        if not os.path.exists(self.config_path):
-            logger.warning(f"Config file not found: {self.config_path}")
-            return
-
         try:
-            with open(self.config_path, 'r', encoding='utf-8') as f:
-                self.config = json.load(f)
-            logger.info(f"Loaded config from {self.config_path}")
+            self.config = ai_config_service.get_ai_config(myWxNumber)
         except Exception as e:
             logger.error(f"Failed to load config: {e}")
 
@@ -133,7 +127,8 @@ class MessageManager:
             new_messages: 消息列表  例 [('京兆瓦肆', '好的'), ('albertyanm', '你好')]
         """
         # 每次处理前重新加载配置，以便实时生效（或者可以通过监听文件变化来优化）
-        self.load_config()
+        self.load_config(myWxNumber)
+        staffList = self.config.get("staffList", []) or []
         common_config = self.config.get("commonConfig", {}) or {}
 
         if not sender:
@@ -177,7 +172,11 @@ class MessageManager:
                 if not f.allow(sender, inbound_content, common_config):
                     logger.debug(f"Filtered by {f.__class__.__name__}: sender={sender}")
                     return
-
+        # 检查是否是群消息
+        groups = state.get_groups(myWxNumber)
+        is_group=False
+        if groups:
+            is_group = any(group.get("name") == sender for group in groups)
         # 2. 发送给 websocket：前端识别 refresh_weixin_messages，用于更新左侧会话摘要
         try:
             ws_manager.broadcast_threadsafe({
@@ -192,12 +191,12 @@ class MessageManager:
                         "is_top": False,
                         "raw_content": newest_content,
                         "source": myWxNumber,
-                        "is_group": False
+                        "is_group": is_group
                     }]
                 }
             }, topic="wechat_messages")
         except Exception as e:
-            logger.error(f"WS broadcast failed: {e}")
+            logger.error(f"WS 发送会话摘要到智能体队列失败: {e}")
 
         try:
             ws_manager.broadcast_threadsafe({
@@ -208,13 +207,25 @@ class MessageManager:
                 }
             }, topic="wechat_messages")
         except Exception as e:
-            logger.error(f"WS broadcast failed: {e}")
-
+            logger.error(f"WS 发送消息到智能体队列失败: {e}")
+        if not staffList:
+            logger.warning(f"没有为 {myWxNumber} 配置智能体")
+            return
+        
+        agentCnt = 0
+        for staff in staffList:
+            chatType = "group" if is_group else "single"
+            if staff.get("chatType") == chatType and staff.get("enabled", True):
+                agentCnt += 1
+        if agentCnt == 0:
+            logger.warning(f"没有为 {myWxNumber} 配置 {chatType} 类型的智能体")
+            return
+        
         # 3. 调用智能体：交由适配器异步编排，避免在监控线程里做重任务导致卡顿/误判超时
         if inbound_content is not None:
             try:
                 message_adapter.add_job(sender, inbound_content, self.config)
             except Exception as e:
-                logger.error(f"Submit message job failed: {e}")
+                logger.error(f"提交消息到智能体队列失败: {e}")
 
 message_manager = MessageManager()

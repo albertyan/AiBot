@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
-import time
+import re
+import time as _time
 import pythoncom
 from pywinauto import mouse
 from pywinauto import Desktop
@@ -16,11 +17,12 @@ from pywinauto.timings import Timings
 from auto.WeChatBot import WeChatBot
 from auto.WeChatToolsExt import ToolsExt,NavigatorExt
 from auto.WeChatAutoExt import ContactsExt,MessagesExt, FriendSettingsExt
-from auto.UielementsExt import (Login_window,Main_window,SideBar,Independent_window,Buttons,Texts,Menus,TabItems,MenuItems,Edits,Windows,)
+from auto.UielementsExt import (CustomsExt, GroupsExt, Login_window,Main_window,SideBar,Independent_window,Buttons,Texts,Menus,TabItems,MenuItems,Edits,Windows, WindowsExt,)
 
 # Buttons=Buttons()#微信内部Button类型UI
 Main_window=Main_window()#微信内部Window类型UI
 Window=Windows()#微信内部Window类型UI
+WindowsExt=WindowsExt()#微信内部Window类型UI
 SideBar=SideBar()#主界面左侧的侧边栏
 Timings.slow()
 # my = main_window.child_window(**Buttons.MySelfButton)
@@ -158,9 +160,101 @@ not_care={'session_item_服务号','session_item_公众号','session_item_QQ邮�
 # print(get_new_message_num(close_weixin=False))
 # print(MessagesExt.dump_sessions())
 # print(MessagesExt.dump_recent_sessions('Today'))
-print(WeChatBot.scan_for_new_messages(close_weixin=False))
+# print(WeChatBot.scan_for_new_messages(close_weixin=False))
 # print(WeChatBot.pull_messages(friend='箭冠网络科技、京兆瓦肆',myname='albertyanm',number=10))
 print("*" * 30)
+CustomsExt=CustomsExt()
+GroupsExt=GroupsExt()
+t1 = _time.monotonic()
+contact_list,main_window=NavigatorExt.open_contacts(is_maximize=False)
+t2=_time.monotonic()
+print(t2-t1)
+contact_custom=main_window.child_window(**CustomsExt.AddNewFriendCustom)
+# print(contact_custom.print_control_identifiers())
+#企业微信联系人分区
+ToolsExt.collapse_contacts(main_window,contact_list)
+t3=_time.monotonic()
+print(t3-t2)
+new_friend_item=main_window.child_window(control_type='ListItem',title=r'新的朋友',class_name="mmui::ContactsCellGroupView")
+
+# contact_item=main_window.child_window(control_type='ListItem',title_re=r'新的朋友\d+',class_name="mmui::ContactsCellGroupView")
+if new_friend_item.exists(timeout=0.1):
+    new_friend_item.click_input()
+
+
+#切换到联系人分区内的第一个好友
+def switch_to_first_friend(contact_list,contact_item):
+    contact_list.type_keys('{HOME}')
+    items=contact_list.children(control_type='ListItem')
+    for i in range(len(items)):
+        if items[i]==contact_item and i<len(items)-1:
+            first_friend=i+1
+            if items[i+1].window_text()=='':
+                first_friend+=1
+            break
+    items[first_friend].click_input()    
+switch_to_first_friend(contact_list,new_friend_item)
+# if new_friend_item.children(control_type='ListItem'):
+#     initial_message=new_friend_item.children(control_type='ListItem')[0]#刚打开聊天界面时的最后一条消息的listitem
+#     initial_message.click_input()
+#右侧自定义面板下的好友信息所在面板
+a={'title':'','control_type':'Button','class_name':'mmui::ContactHeadView'}
+b={'title':'','control_type':'Group','class_name':'mmui::XView'}
+# new_friend_profile=contact_custom.child_window(**b)[-1]
+# print(new_friend_profile.print_control_identifiers())
+# if new_friend_profile:
+#     print(new_friend_profile.element_info)
+#     wxNum = new_friend_profile.descendants(control_type='Button',class_name='mmui::ContactHeadView')
+#     if not wxNum:
+#         for s in wxNum:
+#             print(s)
+#     print("好友信息面板已打开")
+# else:
+#     print("好友信息面板未打开")
+
+# tn=_time.monotonic()
+# print(tn-t1)
+# 来源
+source = contact_custom.child_window(auto_id='profile_pair_line.reader_hover_stacked_view_.reader_text_button_h_view.reader_text_button_stacked_view.value_reader_',class_name='mmui::ContactProfileTextView',control_type='Text')
+# 昵称
+name = contact_custom.child_window(auto_id='TextViewCanCopy',class_name="mmui::TextViewCanCopy", control_type="Text")
+# 前往验证按钮
+button = contact_custom.child_window(title="前往验证",class_name="mmui::XOutlineButton", control_type="Button")
+
+if name:
+    print(name.window_text())
+if source:
+    print(source.window_text())
+
+if button:
+    button.click_input()
+    moments_window=ToolsExt.move_window_to_center(Window=WindowsExt.NewFriendVerifyFriendWindow)
+
+def find_go_verify_button_by_descendants(contact_custom):
+    """
+    用 descendants 查找“前往验证”按钮
+
+    为什么用 descendants：有些 Qt/UIA 控件层级不稳定，直接 child_window 可能偶发找不到，用遍历更抗层级变化。
+    """
+    candidates = contact_custom.descendants(title="前往验证", control_type="Button")
+    return candidates[0] if candidates else None
+
+# btn = find_go_verify_button_by_descendants(contact_custom)
+# if btn:
+#     print(btn.element_info)
+#     # btn.click_input()
+# else:
+#     print("未找到：前往验证")
+# contacts_button=main_window.child_window(**SideBar.Contacts)
+#左上角微信按钮的红色消息提示(\d+条新消息)在FullDescription属性中,
+#只能通过id来获取,id是30159，之前是30007,可能是qt组件映射关系不一样
+# full_desc=contacts_button.element_info.element.GetCurrentPropertyValue(30159)
+# print(full_desc)
+# new_message_num=re.search(r'\d+',full_desc)#正则提取数量
+# print(new_message_num.group(0))
+#微信会话列表内ListItem标准格式:备注\s(已置顶)\s(\d+)条未读\s最后一条消息内容\s时间
+# new_message_pattern=re.compile(r'\n\[(\d+)条\]')#只给数量分组.group(1)获取
+# print(new_message_pattern)
 # print(ToolsExt.where_weixin())
 # FriendSettingsExt.change_remark('张建坤','张建坤1')
 # print(MessagesExt.dump_recent_sessions('Today'))
